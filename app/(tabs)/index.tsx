@@ -1,17 +1,19 @@
 import { generateAPIUrl } from "@/utils";
-import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { fetch as expoFetch } from "expo/fetch";
 import { useState } from "react";
-import { SafeAreaView, ScrollView, Text, TextInput, View } from "react-native";
+import { SafeAreaView, ScrollView, Text, TextInput, View, TouchableOpacity } from "react-native";
 import Markdown from "react-native-markdown-display";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "@/components/language-selector";
+import { usePersistedChat } from "@/hooks/use-persisted-chat";
+import { useConversations } from "@/contexts/conversation-context";
 
 export default function App() {
   const [input, setInput] = useState("");
   const { t, i18n } = useTranslation();
-  const { messages, error, sendMessage } = useChat({
+  const { startNewConversation } = useConversations();
+  const { messages, error, sendMessage, conversationLoading } = usePersistedChat({
     transport: new DefaultChatTransport({
       fetch: expoFetch as unknown as typeof globalThis.fetch,
       api: generateAPIUrl("/api/chat"),
@@ -34,7 +36,22 @@ export default function App() {
           paddingHorizontal: 8,
         }}
       >
-        <LanguageSelector />
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+          <LanguageSelector />
+          <TouchableOpacity
+            onPress={startNewConversation}
+            style={{
+              backgroundColor: "#007AFF",
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+              borderRadius: 6,
+            }}
+          >
+            <Text style={{ color: "white", fontWeight: "600" }}>
+              {t("chat.newConversation", "New Chat")}
+            </Text>
+          </TouchableOpacity>
+        </View>
         <ScrollView style={{ flex: 1 }}>
           {messages.map((m) => (
             <View key={m.id} style={{ marginVertical: 8 }}>
