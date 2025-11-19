@@ -1,46 +1,72 @@
+import { LanguageSelector } from "@/components/language-selector";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Colors, getProseStyles } from "@/constants/theme";
+import { useConversations } from "@/contexts/conversation-context";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { usePersistedChat } from "@/hooks/use-persisted-chat";
 import { generateAPIUrl } from "@/utils";
 import { DefaultChatTransport } from "ai";
 import { fetch as expoFetch } from "expo/fetch";
 import { useState } from "react";
-import { SafeAreaView, ScrollView, Text, TextInput, View, TouchableOpacity, StyleSheet } from "react-native";
-import Markdown from "react-native-markdown-display";
 import { useTranslation } from "react-i18next";
-import { LanguageSelector } from "@/components/language-selector";
-import { usePersistedChat } from "@/hooks/use-persisted-chat";
-import { useConversations } from "@/contexts/conversation-context";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { Colors, getProseStyles } from "@/constants/theme";
+import {
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import Markdown from "react-native-markdown-display";
 
 export default function App() {
   const [input, setInput] = useState("");
   const { t, i18n } = useTranslation();
   const { startNewConversation } = useConversations();
   const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const isDark = colorScheme === "dark";
   const colors = isDark ? Colors.dark : Colors.light;
   const proseStyles = getProseStyles(isDark);
 
-  const { messages, error, sendMessage, conversationLoading } = usePersistedChat({
-    transport: new DefaultChatTransport({
-      fetch: expoFetch as unknown as typeof globalThis.fetch,
-      api: generateAPIUrl("/api/chat"),
-      body: {
-        language: i18n.language,
-      },
-    }),
-    onError: (error) => console.error(error, "ERROR"),
-  });
+  const { messages, error, sendMessage, conversationLoading } =
+    usePersistedChat({
+      transport: new DefaultChatTransport({
+        fetch: expoFetch as unknown as typeof globalThis.fetch,
+        api: generateAPIUrl("/api/chat"),
+        body: {
+          language: i18n.language,
+        },
+      }),
+      onError: (error) => console.error(error, "ERROR"),
+    });
 
-  if (error) return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Text style={{ color: colors.text }}>{error.message}</Text>
-    </View>
-  );
+  if (error)
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <Text style={{ color: colors.text }}>{error.message}</Text>
+      </View>
+    );
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.backgroundSecondary }]}>
-      <View style={[styles.container, { backgroundColor: colors.backgroundSecondary }]}>
-        <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: colors.backgroundSecondary }]}
+    >
+      <View
+        style={[
+          styles.container,
+          { backgroundColor: colors.backgroundSecondary },
+        ]}
+      >
+        <View
+          style={[
+            styles.header,
+            {
+              backgroundColor: colors.background,
+              borderBottomColor: colors.border,
+            },
+          ]}
+        >
           <LanguageSelector />
           <TouchableOpacity
             onPress={startNewConversation}
@@ -69,20 +95,35 @@ export default function App() {
                 style={[
                   styles.messageBubble,
                   {
-                    backgroundColor: m.role === "user" ? colors.userMessage : colors.aiMessage,
+                    backgroundColor:
+                      m.role === "user" ? colors.userMessage : colors.aiMessage,
                     borderColor: colors.border,
-                  }
+                  },
                 ]}
               >
-                <Text style={[styles.roleLabel, { color: colors.textSecondary }]}>
-                  {m.role === "user" ? t("chat.user") : t("chat.assistant")}
-                </Text>
                 {m.parts.map((part, i) => {
                   switch (part.type) {
                     case "text":
                       return (
-                        <View key={`${m.id}-${i}`} style={styles.messageContent}>
-                          <Markdown style={proseStyles}>
+                        <View
+                          key={`${m.id}-${i}`}
+                          style={styles.messageContent}
+                        >
+                          <Markdown
+                            style={proseStyles}
+                            rules={{
+                              table: (node, children, parent, styles) => (
+                                <ScrollView
+                                  key={node.key}
+                                  horizontal
+                                  showsHorizontalScrollIndicator={true}
+                                  style={{ marginVertical: 12 }}
+                                >
+                                  <View style={styles.table}>{children}</View>
+                                </ScrollView>
+                              ),
+                            }}
+                          >
                             {part.text}
                           </Markdown>
                         </View>
@@ -91,7 +132,12 @@ export default function App() {
                     case "tool-convertFahrenheitToCelsius":
                       return (
                         <View key={`${m.id}-${i}`} style={styles.toolResult}>
-                          <Text style={[styles.toolResultText, { color: colors.textSecondary }]}>
+                          <Text
+                            style={[
+                              styles.toolResultText,
+                              { color: colors.textSecondary },
+                            ]}
+                          >
                             {JSON.stringify(part, null, 2)}
                           </Text>
                         </View>
@@ -103,7 +149,16 @@ export default function App() {
           ))}
         </ScrollView>
 
-        <View style={[styles.inputContainer, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
+        <View
+          style={[
+            styles.inputContainer,
+            {
+              backgroundColor: colors.background,
+              borderTopColor: colors.border,
+              flexDirection: "row",
+            },
+          ]}
+        >
           <TextInput
             style={[
               styles.input,
@@ -111,7 +166,9 @@ export default function App() {
                 backgroundColor: colors.input,
                 borderColor: colors.inputBorder,
                 color: colors.text,
-              }
+                flex: 1,
+                marginRight: 16,
+              },
             ]}
             placeholderTextColor={colors.textTertiary}
             placeholder={t("chat.placeholder")}
@@ -125,6 +182,16 @@ export default function App() {
             multiline
             maxLength={2000}
           />
+          <TouchableOpacity
+            onPress={() => {
+              sendMessage({ text: input });
+              setInput("");
+            }}
+            style={[styles.sendButton, { backgroundColor: colors.accent }]}
+            activeOpacity={0.8}
+          >
+            <IconSymbol name="paperplane.fill" size={24} color="white" />
+          </TouchableOpacity>
         </View>
       </View>
     </SafeAreaView>
@@ -165,13 +232,12 @@ const styles = StyleSheet.create({
   },
   messageWrapper: {
     marginBottom: 16,
-    alignItems: "flex-start",
   },
   userMessageWrapper: {
     alignItems: "flex-end",
   },
   messageBubble: {
-    maxWidth: "85%",
+    maxWidth: "100%",
     borderRadius: 12,
     borderWidth: 1,
     paddingHorizontal: 16,
@@ -207,5 +273,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     maxHeight: 120,
     minHeight: 44,
+  },
+  sendButton: {
+    padding: 8,
+    borderRadius: 100,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

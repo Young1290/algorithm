@@ -97,7 +97,7 @@ export function calcAvgPrice(trades: Trade[]): AvgPriceResult {
     throw new Error('Trades array cannot be empty');
   }
 
-  // total_cost = sum(amount) since amount is already in dollar value
+  // total_cost = sum(amount) since amount is already in ringgit value
   const totalCost = trades.reduce((sum, t) => sum + t.amount, 0);
 
   // total_qty = sum(amount / price) to get BTC quantity
@@ -376,7 +376,7 @@ export function calculateCapitalAdjustments(params: {
 // ============================================================
 
 function formatCurrency(value: number): string {
-  return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `RM${value.toLocaleString('ms-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function formatBTC(value: number): string {

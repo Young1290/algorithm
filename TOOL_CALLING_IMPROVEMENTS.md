@@ -59,8 +59,8 @@ execute: async (params) => {
 Start your dev server and try this query:
 
 ```
-I bought BTC at $102,313, $83,888, and $78,888 with amounts of $300k, $300k, and $1M.
-What's my position if I take profit at $100k or stop loss at $90k? I'm long.
+I bought BTC at RM102,313, RM83,888, and RM78,888 with amounts of RM300k, RM300k, and RM1M.
+What's my position if I take profit at RM100k or stop loss at RM90k? I'm long.
 ```
 
 ### Expected Behavior
@@ -128,25 +128,25 @@ With tools being called correctly, you should see:
 ```markdown
 ## Position Analysis
 
-**Average Price:** $83,400.90
+**Average Price:** RM83,400.90
 **Total Quantity:** 19.184446 BTC
-**Position Value:** $1,600,000.00
+**Position Value:** RM1,600,000.00
 
 ### LONG Position Scenarios
 
-**Take Profit:** Profit of $318,444.62
-- Remaining Capital: $2,318,444.62
+**Take Profit:** Profit of RM318,444.62
+- Remaining Capital: RM2,318,444.62
 
-**Stop Loss:** Profit of $126,600.15
-- Remaining Capital: $2,126,600.15
+**Stop Loss:** Profit of RM126,600.15
+- Remaining Capital: RM2,126,600.15
 
 ### Incremental Position Building
 
 | # | Price | Position | Cumulative | Avg Price | TP P&L | TP After | SL P&L | SL After |
 |---|------:|----------:|-----------:|----------:|--------:|---------:|--------:|---------:|
-| 1 | $102,313.00 | $300,000.00 | $300,000.00 | $102,313.00 | $-6,782.13 | $1,993,217.87 | $-36,103.92 | $1,963,896.08 |
-| 2 | $83,888.00 | $300,000.00 | $600,000.00 | $92,188.90 | $50,837.55 | $2,050,837.55 | $-14,246.20 | $1,985,753.80 |
-| 3 | $78,888.80 | $1,000,000.00 | $1,600,000.00 | $83,400.90 | $318,444.62 | $2,318,444.62 | $126,600.15 | $2,126,600.15 |
+| 1 | RM102,313.00 | RM300,000.00 | RM300,000.00 | RM102,313.00 | RM-6,782.13 | RM1,993,217.87 | RM-36,103.92 | RM1,963,896.08 |
+| 2 | RM83,888.00 | RM300,000.00 | RM600,000.00 | RM92,188.90 | RM50,837.55 | RM2,050,837.55 | RM-14,246.20 | RM1,985,753.80 |
+| 3 | RM78,888.80 | RM1,000,000.00 | RM1,600,000.00 | RM83,400.90 | RM318,444.62 | RM2,318,444.62 | RM126,600.15 | RM2,126,600.15 |
 ```
 
 These are the **exact numbers from verified calculations** (tested against Python original).

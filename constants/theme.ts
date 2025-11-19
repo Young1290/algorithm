@@ -205,15 +205,23 @@ export const getProseStyles = (isDark: boolean) => {
       borderBottomColor: colors.border,
       borderRightWidth: 1,
       borderRightColor: colors.borderLight,
+      minWidth: 120,
+      flexShrink: 0,
     },
     tr: {
       borderBottomWidth: 1,
       borderBottomColor: colors.borderLight,
+      flexDirection: 'row' as const,
     },
     td: {
       padding: 12,
       borderRightWidth: 1,
       borderRightColor: colors.borderLight,
+      minWidth: 120,
+      flexShrink: 0,
+    },
+    text: {
+      flexWrap: 'nowrap' as const,
     },
     link: {
       color: colors.accent,

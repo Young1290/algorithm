@@ -3,10 +3,20 @@
  * Provides conversation CRUD operations and state to all components
  */
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import type { UIMessage } from 'ai';
-import type { Conversation, ConversationMetadata, CreateConversationOptions } from '../lib/types/conversation';
-import * as ConversationStorage from '../lib/storage/conversation-storage';
+import * as ConversationStorage from "@/app/lib/storage/conversation-storage";
+import type {
+  Conversation,
+  ConversationMetadata,
+  CreateConversationOptions,
+} from "@/app/lib/types/conversation";
+import type { UIMessage } from "ai";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 
 interface ConversationContextValue {
   /** Currently active conversation */
@@ -19,7 +29,10 @@ interface ConversationContextValue {
   loading: boolean;
 
   /** Create a new conversation and optionally set it as active */
-  createConversation: (options?: CreateConversationOptions, setAsActive?: boolean) => Promise<Conversation>;
+  createConversation: (
+    options?: CreateConversationOptions,
+    setAsActive?: boolean
+  ) => Promise<Conversation>;
 
   /** Load and set a conversation as active */
   loadConversation: (id: string) => Promise<void>;
@@ -40,15 +53,20 @@ interface ConversationContextValue {
   refreshConversations: () => Promise<void>;
 }
 
-const ConversationContext = createContext<ConversationContextValue | null>(null);
+const ConversationContext = createContext<ConversationContextValue | null>(
+  null
+);
 
 interface ConversationProviderProps {
   children: React.ReactNode;
 }
 
 export function ConversationProvider({ children }: ConversationProviderProps) {
-  const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
-  const [conversations, setConversations] = useState<ConversationMetadata[]>([]);
+  const [currentConversation, setCurrentConversation] =
+    useState<Conversation | null>(null);
+  const [conversations, setConversations] = useState<ConversationMetadata[]>(
+    []
+  );
   const [loading, setLoading] = useState(true);
 
   /**
@@ -59,7 +77,7 @@ export function ConversationProvider({ children }: ConversationProviderProps) {
       const metadata = await ConversationStorage.getConversationsMetadata();
       setConversations(metadata);
     } catch (error) {
-      console.error('Failed to load conversations metadata:', error);
+      console.error("Failed to load conversations metadata:", error);
     }
   }, []);
 
@@ -77,7 +95,9 @@ export function ConversationProvider({ children }: ConversationProviderProps) {
         // Try to load the active conversation
         const activeId = await ConversationStorage.getActiveConversationId();
         if (activeId) {
-          const conversation = await ConversationStorage.loadConversation(activeId);
+          const conversation = await ConversationStorage.loadConversation(
+            activeId
+          );
           if (conversation) {
             setCurrentConversation(conversation);
             return;
@@ -90,7 +110,7 @@ export function ConversationProvider({ children }: ConversationProviderProps) {
         setCurrentConversation(newConversation);
         await loadConversationsMetadata();
       } catch (error) {
-        console.error('Failed to initialize conversations:', error);
+        console.error("Failed to initialize conversations:", error);
       } finally {
         setLoading(false);
       }
@@ -103,9 +123,14 @@ export function ConversationProvider({ children }: ConversationProviderProps) {
    * Create a new conversation
    */
   const createConversation = useCallback(
-    async (options: CreateConversationOptions = {}, setAsActive = true): Promise<Conversation> => {
+    async (
+      options: CreateConversationOptions = {},
+      setAsActive = true
+    ): Promise<Conversation> => {
       try {
-        const conversation = await ConversationStorage.createConversation(options);
+        const conversation = await ConversationStorage.createConversation(
+          options
+        );
 
         if (setAsActive) {
           await ConversationStorage.setActiveConversationId(conversation.id);
@@ -115,7 +140,7 @@ export function ConversationProvider({ children }: ConversationProviderProps) {
         await loadConversationsMetadata();
         return conversation;
       } catch (error) {
-        console.error('Failed to create conversation:', error);
+        console.error("Failed to create conversation:", error);
         throw error;
       }
     },
@@ -144,26 +169,32 @@ export function ConversationProvider({ children }: ConversationProviderProps) {
   /**
    * Update the current conversation's messages
    */
-  const updateMessages = useCallback(async (messages: UIMessage[]) => {
-    if (!currentConversation) {
-      console.warn('No active conversation to update');
-      return;
-    }
-
-    try {
-      const updated = await ConversationStorage.updateConversation(currentConversation.id, {
-        messages,
-      });
-
-      if (updated) {
-        setCurrentConversation(updated);
-        await loadConversationsMetadata();
+  const updateMessages = useCallback(
+    async (messages: UIMessage[]) => {
+      if (!currentConversation) {
+        console.warn("No active conversation to update");
+        return;
       }
-    } catch (error) {
-      console.error('Failed to update messages:', error);
-      throw error;
-    }
-  }, [currentConversation, loadConversationsMetadata]);
+
+      try {
+        const updated = await ConversationStorage.updateConversation(
+          currentConversation.id,
+          {
+            messages,
+          }
+        );
+
+        if (updated) {
+          setCurrentConversation(updated);
+          await loadConversationsMetadata();
+        }
+      } catch (error) {
+        console.error("Failed to update messages:", error);
+        throw error;
+      }
+    },
+    [currentConversation, loadConversationsMetadata]
+  );
 
   /**
    * Update the current conversation's title
@@ -171,21 +202,24 @@ export function ConversationProvider({ children }: ConversationProviderProps) {
   const updateTitle = useCallback(
     async (title: string) => {
       if (!currentConversation) {
-        console.warn('No active conversation to update');
+        console.warn("No active conversation to update");
         return;
       }
 
       try {
-        const updated = await ConversationStorage.updateConversation(currentConversation.id, {
-          title,
-        });
+        const updated = await ConversationStorage.updateConversation(
+          currentConversation.id,
+          {
+            title,
+          }
+        );
 
         if (updated) {
           setCurrentConversation(updated);
           await loadConversationsMetadata();
         }
       } catch (error) {
-        console.error('Failed to update title:', error);
+        console.error("Failed to update title:", error);
         throw error;
       }
     },
@@ -202,7 +236,8 @@ export function ConversationProvider({ children }: ConversationProviderProps) {
 
         // If we deleted the current conversation, start a new one
         if (currentConversation?.id === id) {
-          const newConversation = await ConversationStorage.createConversation();
+          const newConversation =
+            await ConversationStorage.createConversation();
           await ConversationStorage.setActiveConversationId(newConversation.id);
           setCurrentConversation(newConversation);
         }
@@ -226,7 +261,7 @@ export function ConversationProvider({ children }: ConversationProviderProps) {
       setCurrentConversation(newConversation);
       await loadConversationsMetadata();
     } catch (error) {
-      console.error('Failed to start new conversation:', error);
+      console.error("Failed to start new conversation:", error);
       throw error;
     }
   }, [loadConversationsMetadata]);
@@ -251,7 +286,11 @@ export function ConversationProvider({ children }: ConversationProviderProps) {
     refreshConversations,
   };
 
-  return <ConversationContext.Provider value={value}>{children}</ConversationContext.Provider>;
+  return (
+    <ConversationContext.Provider value={value}>
+      {children}
+    </ConversationContext.Provider>
+  );
 }
 
 /**
@@ -261,7 +300,9 @@ export function ConversationProvider({ children }: ConversationProviderProps) {
 export function useConversations(): ConversationContextValue {
   const context = useContext(ConversationContext);
   if (!context) {
-    throw new Error('useConversations must be used within a ConversationProvider');
+    throw new Error(
+      "useConversations must be used within a ConversationProvider"
+    );
   }
   return context;
 }

@@ -64,8 +64,8 @@ Respond in English.`,
         description: 'REQUIRED for analyzing Bitcoin positions. Use this when user provides: entry prices, investment amounts, and wants to know P&L, average price, or position analysis. Always use this tool instead of manual calculations.',
         inputSchema: z.object({
           trades: z.array(z.object({
-            price: z.number().positive().describe('Entry price for this trade in USD'),
-            amount: z.number().positive().describe('Dollar amount invested in this trade')
+            price: z.number().positive().describe('Entry price for this trade in MYR'),
+            amount: z.number().positive().describe('Ringgit amount invested in this trade')
           })).min(1).describe('Array of trades that make up the position'),
           takeProfitPrice: z.number().positive().describe('Target price for taking profit'),
           stopLossPrice: z.number().positive().describe('Target price for stop loss'),
@@ -100,8 +100,8 @@ Respond in English.`,
         description: 'REQUIRED when user asks "what price do I need" or wants to know target prices for a specific return percentage (e.g., "10% profit"). Use this instead of manual calculation.',
         inputSchema: z.object({
           trades: z.array(z.object({
-            price: z.number().positive().describe('Entry price for this trade in USD'),
-            amount: z.number().positive().describe('Dollar amount invested in this trade')
+            price: z.number().positive().describe('Entry price for this trade in MYR'),
+            amount: z.number().positive().describe('Ringgit amount invested in this trade')
           })).min(1).describe('Array of trades that make up the position'),
           initialCapital: z.number().positive().optional().describe('Initial capital to calculate returns against (defaults to sum of trade amounts)'),
           targetReturnPercent: z.number().min(-0.99).max(10).describe('Target return as decimal (e.g., 0.10 for 10%, -0.05 for -5%)'),
@@ -132,8 +132,8 @@ Respond in English.`,
         description: 'REQUIRED when user asks about hedging, position adjustments, "how to reach X% return", or wants recommendations for modifying their position. Use this to calculate hedge or spot addition strategies.',
         inputSchema: z.object({
           trades: z.array(z.object({
-            price: z.number().positive().describe('Entry price for this trade in USD'),
-            amount: z.number().positive().describe('Dollar amount invested in this trade')
+            price: z.number().positive().describe('Entry price for this trade in MYR'),
+            amount: z.number().positive().describe('Ringgit amount invested in this trade')
           })).min(1).describe('Array of trades that make up the current position'),
           initialCapital: z.number().positive().optional().describe('Initial capital to calculate returns against (defaults to sum of trade amounts)'),
           desiredPrice: z.number().positive().describe('Target exit price you want to analyze'),

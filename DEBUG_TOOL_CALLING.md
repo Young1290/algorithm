@@ -39,8 +39,8 @@ Keep your terminal visible - you'll see logs like:
 ### Step 3: Send Test Message
 In your chat UI, send:
 ```
-I bought BTC at $102,313, $83,888, and $78,888 with amounts of $300k, $300k, and $1M.
-What's my position if I take profit at $100k or stop loss at $90k? I'm long.
+I bought BTC at RM102,313, RM83,888, and RM78,888 with amounts of RM300k, RM300k, and RM1M.
+What's my position if I take profit at RM100k or stop loss at RM90k? I'm long.
 ```
 
 ### Step 4: Check Console Output
@@ -213,9 +213,9 @@ When everything works, you should see:
 ```markdown
 ## Position Analysis
 
-**Average Price:** $83,400.90
+**Average Price:** RM83,400.90
 **Total Quantity:** 19.184446 BTC
-**Position Value:** $1,600,000.00
+**Position Value:** RM1,600,000.00
 
 ### LONG Position Scenarios
 ...
