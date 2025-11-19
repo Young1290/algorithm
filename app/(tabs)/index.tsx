@@ -4,6 +4,7 @@ import { DefaultChatTransport } from "ai";
 import { fetch as expoFetch } from "expo/fetch";
 import { useState } from "react";
 import { SafeAreaView, ScrollView, Text, TextInput, View } from "react-native";
+import Markdown from "react-native-markdown-display";
 
 export default function App() {
   const [input, setInput] = useState("");
@@ -35,7 +36,11 @@ export default function App() {
                 {m.parts.map((part, i) => {
                   switch (part.type) {
                     case "text":
-                      return <Text key={`${m.id}-${i}`}>{part.text}</Text>;
+                      return (
+                        <Markdown key={`${m.id}-${i}`}>
+                          {part.text}
+                        </Markdown>
+                      );
                     case "tool-weather":
                     case "tool-convertFahrenheitToCelsius":
                       return (
