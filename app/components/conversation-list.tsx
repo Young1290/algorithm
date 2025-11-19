@@ -7,6 +7,8 @@ import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
 import { useConversations } from '@/contexts/conversation-context';
 import { useTranslation } from 'react-i18next';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
 
 export function ConversationList() {
   const {
@@ -17,6 +19,9 @@ export function ConversationList() {
     startNewConversation,
   } = useConversations();
   const { t } = useTranslation();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+  const colors = isDark ? Colors.dark : Colors.light;
 
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp);
@@ -35,10 +40,14 @@ export function ConversationList() {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{t('conversation.history', 'Conversation History')}</Text>
-        <TouchableOpacity onPress={startNewConversation} style={styles.newButton}>
+    <View style={[styles.container, { backgroundColor: colors.backgroundSecondary }]}>
+      <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+        <Text style={[styles.title, { color: colors.text }]}>{t('conversation.history', 'Conversation History')}</Text>
+        <TouchableOpacity
+          onPress={startNewConversation}
+          style={[styles.newButton, { backgroundColor: colors.accent }]}
+          activeOpacity={0.8}
+        >
           <Text style={styles.newButtonText}>+ {t('conversation.new', 'New')}</Text>
         </TouchableOpacity>
       </View>
@@ -46,7 +55,7 @@ export function ConversationList() {
       <ScrollView style={styles.list}>
         {conversations.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>
+            <Text style={[styles.emptyText, { color: colors.textTertiary }]}>
               {t('conversation.noConversations', 'No conversations yet')}
             </Text>
           </View>
@@ -55,24 +64,40 @@ export function ConversationList() {
             const isActive = conv.id === currentConversation?.id;
 
             return (
-              <View key={conv.id} style={styles.conversationItem}>
+              <View
+                key={conv.id}
+                style={[
+                  styles.conversationItem,
+                  {
+                    backgroundColor: colors.background,
+                    borderColor: isActive ? colors.accent : colors.border,
+                  }
+                ]}
+              >
                 <TouchableOpacity
                   onPress={() => loadConversation(conv.id)}
-                  style={[styles.conversationButton, isActive && styles.conversationButtonActive]}
+                  style={[
+                    styles.conversationButton,
+                    isActive && { backgroundColor: colors.backgroundTertiary }
+                  ]}
+                  activeOpacity={0.7}
                 >
                   <View style={styles.conversationInfo}>
                     <Text
-                      style={[styles.conversationTitle, isActive && styles.conversationTitleActive]}
+                      style={[
+                        styles.conversationTitle,
+                        { color: isActive ? colors.accent : colors.text }
+                      ]}
                       numberOfLines={1}
                     >
                       {conv.title}
                     </Text>
                     <View style={styles.conversationMeta}>
-                      <Text style={styles.conversationMetaText}>
+                      <Text style={[styles.conversationMetaText, { color: colors.textSecondary }]}>
                         {conv.messageCount} {t('conversation.messages', 'messages')}
                       </Text>
-                      <Text style={styles.conversationMetaText}>•</Text>
-                      <Text style={styles.conversationMetaText}>{formatDate(conv.updatedAt)}</Text>
+                      <Text style={[styles.conversationMetaText, { color: colors.textTertiary }]}>•</Text>
+                      <Text style={[styles.conversationMetaText, { color: colors.textSecondary }]}>{formatDate(conv.updatedAt)}</Text>
                     </View>
                   </View>
                 </TouchableOpacity>
@@ -96,6 +121,7 @@ export function ConversationList() {
                     );
                   }}
                   style={styles.deleteButton}
+                  activeOpacity={0.8}
                 >
                   <Text style={styles.deleteButtonText}>×</Text>
                 </TouchableOpacity>
@@ -111,26 +137,23 @@ export function ConversationList() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: 'white',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
   },
   title: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
   },
   newButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
   },
   newButtonText: {
     color: 'white',
@@ -141,27 +164,24 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   emptyState: {
-    padding: 32,
+    padding: 48,
     alignItems: 'center',
   },
   emptyText: {
-    color: '#999',
-    fontSize: 14,
+    fontSize: 15,
   },
   conversationItem: {
     flexDirection: 'row',
-    backgroundColor: 'white',
-    marginVertical: 4,
-    marginHorizontal: 8,
-    borderRadius: 8,
+    marginVertical: 6,
+    marginHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
     overflow: 'hidden',
   },
   conversationButton: {
     flex: 1,
-    padding: 12,
-  },
-  conversationButtonActive: {
-    backgroundColor: '#e3f2fd',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   conversationInfo: {
     flex: 1,
@@ -169,29 +189,25 @@ const styles = StyleSheet.create({
   conversationTitle: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 4,
-    color: '#333',
-  },
-  conversationTitleActive: {
-    color: '#007AFF',
+    marginBottom: 6,
   },
   conversationMeta: {
     flexDirection: 'row',
     gap: 8,
   },
   conversationMetaText: {
-    fontSize: 12,
-    color: '#999',
+    fontSize: 13,
   },
   deleteButton: {
-    width: 40,
+    width: 48,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#ff3b30',
+    backgroundColor: '#ef4444',
   },
   deleteButtonText: {
     color: 'white',
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 28,
+    fontWeight: '300',
+    lineHeight: 28,
   },
 });
