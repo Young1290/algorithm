@@ -1,5 +1,7 @@
 // TypeScript port of Bitcoin trading analysis functions
 
+import { getTradingTranslations } from './trading-i18n';
+
 // ============================================================
 // Type Definitions
 // ============================================================
@@ -385,8 +387,9 @@ function formatPercent(value: number): string {
   return `${(value * 100).toFixed(2)}%`;
 }
 
-function formatPnlLabel(pnl: number): string {
-  return pnl >= 0 ? 'Profit' : 'Loss';
+function formatPnlLabel(pnl: number, language: string = 'en'): string {
+  const t = getTradingTranslations(language);
+  return pnl >= 0 ? t.profit : t.loss;
 }
 
 /**
@@ -394,27 +397,30 @@ function formatPnlLabel(pnl: number): string {
  */
 export function formatAnalysisSummary(
   analysis: Omit<PositionAnalysis, 'summary'>,
-  incrementalTable: IncrementalTableRow[] | null
+  incrementalTable: IncrementalTableRow[] | null,
+  language: string = 'en'
 ): string {
-  let md = '## Position Analysis\n\n';
-  md += `**Average Price:** ${formatCurrency(analysis.avgPrice)}\n`;
-  md += `**Total Quantity:** ${formatBTC(analysis.totalQuantity)} BTC\n`;
-  md += `**Position Value:** ${formatCurrency(analysis.totalCapital)}\n\n`;
+  const t = getTradingTranslations(language);
 
-  md += '### LONG Position Scenarios\n\n';
-  md += `**Take Profit:** ${formatPnlLabel(analysis.longAnalysis.takeProfitPnl)} of ${formatCurrency(Math.abs(analysis.longAnalysis.takeProfitPnl))}\n`;
-  md += `- Remaining Capital: ${formatCurrency(analysis.longAnalysis.takeProfitAfter)}\n\n`;
-  md += `**Stop Loss:** ${formatPnlLabel(analysis.longAnalysis.stopLossPnl)} of ${formatCurrency(Math.abs(analysis.longAnalysis.stopLossPnl))}\n`;
-  md += `- Remaining Capital: ${formatCurrency(analysis.longAnalysis.stopLossAfter)}\n\n`;
+  let md = `${t.positionAnalysis}\n\n`;
+  md += `${t.averagePrice} ${formatCurrency(analysis.avgPrice)}\n`;
+  md += `${t.totalQuantity} ${formatBTC(analysis.totalQuantity)} BTC\n`;
+  md += `${t.positionValue} ${formatCurrency(analysis.totalCapital)}\n\n`;
 
-  md += '### SHORT Position Scenarios\n\n';
-  md += `**Take Profit:** ${formatPnlLabel(analysis.shortAnalysis.takeProfitPnl)} of ${formatCurrency(Math.abs(analysis.shortAnalysis.takeProfitPnl))}\n`;
-  md += `- Remaining Capital: ${formatCurrency(analysis.shortAnalysis.takeProfitAfter)}\n\n`;
-  md += `**Stop Loss:** ${formatPnlLabel(analysis.shortAnalysis.stopLossPnl)} of ${formatCurrency(Math.abs(analysis.shortAnalysis.stopLossPnl))}\n`;
-  md += `- Remaining Capital: ${formatCurrency(analysis.shortAnalysis.stopLossAfter)}\n\n`;
+  md += `${t.longPosition}\n\n`;
+  md += `${t.takeProfit} ${formatPnlLabel(analysis.longAnalysis.takeProfitPnl, language)} of ${formatCurrency(Math.abs(analysis.longAnalysis.takeProfitPnl))}\n`;
+  md += `- ${t.remainingCapital}: ${formatCurrency(analysis.longAnalysis.takeProfitAfter)}\n\n`;
+  md += `${t.stopLoss} ${formatPnlLabel(analysis.longAnalysis.stopLossPnl, language)} of ${formatCurrency(Math.abs(analysis.longAnalysis.stopLossPnl))}\n`;
+  md += `- ${t.remainingCapital}: ${formatCurrency(analysis.longAnalysis.stopLossAfter)}\n\n`;
+
+  md += `${t.shortPosition}\n\n`;
+  md += `${t.takeProfit} ${formatPnlLabel(analysis.shortAnalysis.takeProfitPnl, language)} of ${formatCurrency(Math.abs(analysis.shortAnalysis.takeProfitPnl))}\n`;
+  md += `- ${t.remainingCapital}: ${formatCurrency(analysis.shortAnalysis.takeProfitAfter)}\n\n`;
+  md += `${t.stopLoss} ${formatPnlLabel(analysis.shortAnalysis.stopLossPnl, language)} of ${formatCurrency(Math.abs(analysis.shortAnalysis.stopLossPnl))}\n`;
+  md += `- ${t.remainingCapital}: ${formatCurrency(analysis.shortAnalysis.stopLossAfter)}\n\n`;
 
   if (incrementalTable) {
-    md += formatIncrementalTable(incrementalTable);
+    md += formatIncrementalTable(incrementalTable, language);
   }
 
   return md;
@@ -423,9 +429,11 @@ export function formatAnalysisSummary(
 /**
  * Format incremental table as markdown
  */
-export function formatIncrementalTable(rows: IncrementalTableRow[]): string {
-  let md = '### Incremental Position Building\n\n';
-  md += '| # | Price | Position | Cumulative | Avg Price | TP P&L | TP After | SL P&L | SL After |\n';
+export function formatIncrementalTable(rows: IncrementalTableRow[], language: string = 'en'): string {
+  const t = getTradingTranslations(language);
+
+  let md = `${t.incrementalBuilding}\n\n`;
+  md += `| # | ${t.price} | Position | ${t.cumulativePosition} | ${t.avgPrice} | ${t.tpPnL} | ${t.tpAfter} | ${t.slPnL} | ${t.slAfter} |\n`;
   md += '|---|------:|----------:|-----------:|----------:|--------:|---------:|--------:|---------:|\n';
 
   for (const row of rows) {
@@ -447,26 +455,27 @@ export function formatIncrementalTable(rows: IncrementalTableRow[]): string {
 /**
  * Format target price analysis as markdown
  */
-export function formatTargetPrices(analysis: Omit<TargetPriceAnalysis, 'summary'>): string {
-  const posLabel = analysis.position.toUpperCase();
+export function formatTargetPrices(analysis: Omit<TargetPriceAnalysis, 'summary'>, language: string = 'en'): string {
+  const t = getTradingTranslations(language);
+  const posLabel = analysis.position === 'long' ? t.long : t.short;
 
-  let md = '## Target Price Analysis\n\n';
-  md += `**Position:** ${posLabel}\n`;
-  md += `**Average Price:** ${formatCurrency(analysis.avgPrice)}\n`;
-  md += `**Quantity:** ${formatBTC(analysis.quantity)} BTC\n`;
-  md += `**Net Position Amount:** ${formatCurrency(analysis.netPositionAmount)}\n`;
-  md += `**Initial Capital:** ${formatCurrency(analysis.initialCapital)}\n`;
-  md += `**Target Return:** ${formatPercent(analysis.returnPercent)}\n\n`;
+  let md = `${t.targetPriceAnalysis}\n\n`;
+  md += `${t.position} ${posLabel}\n`;
+  md += `${t.averagePrice} ${formatCurrency(analysis.avgPrice)}\n`;
+  md += `${t.quantity} ${formatBTC(analysis.quantity)} BTC\n`;
+  md += `${t.netPositionAmount} ${formatCurrency(analysis.netPositionAmount)}\n`;
+  md += `${t.initialCapital} ${formatCurrency(analysis.initialCapital)}\n`;
+  md += `${t.targetReturn} ${formatPercent(analysis.returnPercent)}\n\n`;
 
-  md += '### Position-Based Returns\n';
-  md += `(Based on position value: ${formatCurrency(analysis.netPositionAmount)})\n\n`;
-  md += `**Take Profit Price:** ${formatCurrency(analysis.positionBased.takeProfitPrice)}\n`;
-  md += `**Stop Loss Price:** ${formatCurrency(analysis.positionBased.stopLossPrice)}\n\n`;
+  md += `${t.positionBasedReturns}\n`;
+  md += `${t.basedOnPosition} ${formatCurrency(analysis.netPositionAmount)})\n\n`;
+  md += `${t.takeProfitPrice} ${formatCurrency(analysis.positionBased.takeProfitPrice)}\n`;
+  md += `${t.stopLossPrice} ${formatCurrency(analysis.positionBased.stopLossPrice)}\n\n`;
 
-  md += '### Capital-Based Returns\n';
-  md += `(Based on initial capital: ${formatCurrency(analysis.initialCapital)})\n\n`;
-  md += `**Take Profit Price:** ${formatCurrency(analysis.capitalBased.takeProfitPrice)}\n`;
-  md += `**Stop Loss Price:** ${formatCurrency(analysis.capitalBased.stopLossPrice)}\n\n`;
+  md += `${t.capitalBasedReturns}\n`;
+  md += `${t.basedOnCapital} ${formatCurrency(analysis.initialCapital)})\n\n`;
+  md += `${t.takeProfitPrice} ${formatCurrency(analysis.capitalBased.takeProfitPrice)}\n`;
+  md += `${t.stopLossPrice} ${formatCurrency(analysis.capitalBased.stopLossPrice)}\n\n`;
 
   return md;
 }
@@ -474,37 +483,38 @@ export function formatTargetPrices(analysis: Omit<TargetPriceAnalysis, 'summary'
 /**
  * Format capital adjustment suggestions as markdown
  */
-export function formatAdjustmentSuggestions(adjustment: Omit<CapitalAdjustment, 'summary'>): string {
-  const posLabel = adjustment.position.toUpperCase();
+export function formatAdjustmentSuggestions(adjustment: Omit<CapitalAdjustment, 'summary'>, language: string = 'en'): string {
+  const t = getTradingTranslations(language);
+  const posLabel = adjustment.position === 'long' ? t.long : t.short;
 
-  let md = '## Capital Adjustment Suggestions\n\n';
-  md += `**Position:** ${posLabel}\n`;
-  md += `**Target Price:** ${formatCurrency(adjustment.desiredPrice)}\n`;
-  md += `**Current P&L:** ${formatCurrency(adjustment.currentPnl)}\n`;
-  md += `**Target P&L:** ${formatCurrency(adjustment.targetPnl)}\n`;
-  md += `**Gap to Close:** ${formatCurrency(adjustment.pnlGap)}\n\n`;
+  let md = `${t.capitalAdjustment}\n\n`;
+  md += `${t.position} ${posLabel}\n`;
+  md += `${t.targetPrice} ${formatCurrency(adjustment.desiredPrice)}\n`;
+  md += `${t.currentPnL} ${formatCurrency(adjustment.currentPnl)}\n`;
+  md += `${t.targetPnL} ${formatCurrency(adjustment.targetPnl)}\n`;
+  md += `${t.gapToClose} ${formatCurrency(adjustment.pnlGap)}\n\n`;
 
-  md += '### Option 1: Hedging (Opposite Position)\n\n';
+  md += `${t.hedgingOption}\n\n`;
   if (adjustment.hedging) {
-    const action = adjustment.hedging.direction === 'short' ? 'Short' : 'Long';
-    md += `**Action:** Open ${action} position\n`;
-    md += `**Quantity:** ${adjustment.hedging.quantity >= 0 ? '+' : ''}${formatBTC(adjustment.hedging.quantity)} BTC\n`;
-    md += `**Amount:** ${formatCurrency(adjustment.hedging.amount)}\n`;
-    md += `**Entry Price:** ${formatCurrency(adjustment.hedging.entryPrice)}\n\n`;
+    const action = adjustment.hedging.direction === 'short' ? t.openShort : t.openLong;
+    md += `${t.action} ${action}\n`;
+    md += `${t.quantity} ${adjustment.hedging.quantity >= 0 ? '+' : ''}${formatBTC(adjustment.hedging.quantity)} BTC\n`;
+    md += `${t.amount} ${formatCurrency(adjustment.hedging.amount)}\n`;
+    md += `${t.entryPrice} ${formatCurrency(adjustment.hedging.entryPrice)}\n\n`;
   } else {
-    md += '*Cannot hedge: entry price equals target price*\n\n';
+    md += `*${t.cannotHedge}*\n\n`;
   }
 
-  md += '### Option 2: Spot Addition (Same Direction)\n\n';
+  md += `${t.spotAdditionOption}\n\n`;
   if (adjustment.spotAddition) {
-    const action = adjustment.position === 'long' ? 'Buy' : 'Sell';
-    md += `**Action:** ${action} more BTC\n`;
-    md += `**Quantity:** ${adjustment.spotAddition.quantity >= 0 ? '+' : ''}${formatBTC(adjustment.spotAddition.quantity)} BTC\n`;
-    md += `**Amount:** ${formatCurrency(adjustment.spotAddition.amount)}\n`;
-    md += `**Entry Price:** ${formatCurrency(adjustment.spotAddition.entryPrice)}\n`;
-    md += `**New Average Price:** ${formatCurrency(adjustment.spotAddition.newAvgPrice)}\n\n`;
+    const action = adjustment.position === 'long' ? t.buyMore : t.sellMore;
+    md += `${t.action} ${action}\n`;
+    md += `${t.quantity} ${adjustment.spotAddition.quantity >= 0 ? '+' : ''}${formatBTC(adjustment.spotAddition.quantity)} BTC\n`;
+    md += `${t.amount} ${formatCurrency(adjustment.spotAddition.amount)}\n`;
+    md += `${t.entryPrice} ${formatCurrency(adjustment.spotAddition.entryPrice)}\n`;
+    md += `${t.newAveragePrice} ${formatCurrency(adjustment.spotAddition.newAvgPrice)}\n\n`;
   } else {
-    md += '*Cannot add spot: entry price equals target price*\n\n';
+    md += `*${t.cannotAddSpot}*\n\n`;
   }
 
   return md;
@@ -520,6 +530,7 @@ export function analyzePositionWithSummary(params: {
   initialCapital: number;
   position: Position;
   includeIncrementalTable: boolean;
+  language?: string;
 }): PositionAnalysis {
   const analysis = analyzePosition(params);
   const table = params.includeIncrementalTable
@@ -528,7 +539,7 @@ export function analyzePositionWithSummary(params: {
 
   return {
     ...analysis,
-    summary: formatAnalysisSummary(analysis, table)
+    summary: formatAnalysisSummary(analysis, table, params.language || 'en')
   };
 }
 
@@ -540,12 +551,13 @@ export function calculateTargetPricesWithSummary(params: {
   initialCapital: number;
   targetReturnPercent: number;
   position: Position;
+  language?: string;
 }): TargetPriceAnalysis {
   const analysis = calculateTargetPricesForReturn(params);
 
   return {
     ...analysis,
-    summary: formatTargetPrices(analysis)
+    summary: formatTargetPrices(analysis, params.language || 'en')
   };
 }
 
@@ -560,11 +572,12 @@ export function calculateCapitalAdjustmentsWithSummary(params: {
   hedgeEntryPrice: number;
   spotEntryPrice: number;
   position: Position;
+  language?: string;
 }): CapitalAdjustment {
   const adjustment = calculateCapitalAdjustments(params);
 
   return {
     ...adjustment,
-    summary: formatAdjustmentSuggestions(adjustment)
+    summary: formatAdjustmentSuggestions(adjustment, params.language || 'en')
   };
 }

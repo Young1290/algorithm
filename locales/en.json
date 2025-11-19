@@ -1,0 +1,103 @@
+{
+  "navigation": {
+    "home": "Home",
+    "explore": "Explore"
+  },
+  "chat": {
+    "placeholder": "Say something...",
+    "user": "user",
+    "assistant": "assistant"
+  },
+  "explore": {
+    "title": "Explore",
+    "subtitle": "This app includes example code to help you get started.",
+    "fileRouting": {
+      "title": "File-based routing",
+      "description": "This app has two screens: <ThemedText type=\"defaultSemiBold\">app/(tabs)/index.tsx</ThemedText> and <ThemedText type=\"defaultSemiBold\">app/(tabs)/explore.tsx</ThemedText>"
+    },
+    "platformSupport": {
+      "title": "Android, iOS, and web support",
+      "description": "You can open this project on Android, iOS, and the web. To open the web version, press <ThemedText type=\"defaultSemiBold\">w</ThemedText> in the terminal running this project."
+    },
+    "images": {
+      "title": "Images",
+      "description": "For static images, you can use the <ThemedText type=\"defaultSemiBold\">@2x</ThemedText> and <ThemedText type=\"defaultSemiBold\">@3x</ThemedText> suffixes to provide files for different screen densities"
+    },
+    "customFonts": {
+      "title": "Custom fonts",
+      "description": "Open <ThemedText type=\"defaultSemiBold\">app/_layout.tsx</ThemedText> to see how to load <ThemedText style={{ fontFamily: 'SpaceMono' }}>custom fonts such as this one.</ThemedText>"
+    },
+    "lightDarkMode": {
+      "title": "Light and dark mode components",
+      "description": "This template has light and dark mode support. The <ThemedText type=\"defaultSemiBold\">useColorScheme()</ThemedText> hook lets you inspect what the user's current color scheme is, and so you can adjust UI colors accordingly."
+    },
+    "animations": {
+      "title": "Animations",
+      "description": "This template includes an example of an animated component. The <ThemedText type=\"defaultSemiBold\">components/HelloWave.tsx</ThemedText> component uses the powerful <ThemedText type=\"defaultSemiBold\">react-native-reanimated</ThemedText> library to create a waving hand animation."
+    },
+    "learnMore": "Learn more"
+  },
+  "ai": {
+    "systemPrompt": "You are a Bitcoin trading analysis assistant with expert knowledge in technical analysis, position management, and risk assessment. You have access to powerful tools to analyze trading positions, calculate target prices, and suggest position adjustments.\n\nWhen users share their Bitcoin trading data, you should use the provided tools to give them detailed, actionable analysis. Always provide clear insights on profit/loss potential, risk management, and strategic recommendations.\n\nBe conversational, friendly, and focused on helping users make informed trading decisions.",
+    "systemPromptChinese": "你是一个比特币交易分析助手，拥有技术分析、仓位管理和风险评估方面的专业知识。你可以使用强大的工具来分析交易仓位、计算目标价格并建议仓位调整。\n\n当用户分享他们的比特币交易数据时，你应该使用提供的工具为他们提供详细、可操作的分析。始终提供关于盈亏潜力、风险管理和战略建议的清晰见解。\n\n保持对话友好，专注于帮助用户做出明智的交易决策。",
+    "tools": {
+      "analyzeTradePosition": {
+        "description": "Analyzes Bitcoin trading positions including P&L calculation, risk assessment, and incremental building strategies",
+        "descriptionChinese": "分析比特币交易仓位，包括盈亏计算、风险评估和增量建仓策略"
+      },
+      "calculateTargetPrices": {
+        "description": "Calculates target exit prices needed to achieve desired return percentages for both position-based and capital-based scenarios",
+        "descriptionChinese": "计算达到期望收益率所需的目标退出价格，包括基于仓位和基于资金的场景"
+      },
+      "suggestPositionAdjustment": {
+        "description": "Suggests position adjustment strategies (hedging or spot addition) to reach target prices or returns",
+        "descriptionChinese": "建议仓位调整策略（对冲或现货加仓）以达到目标价格或收益率"
+      }
+    }
+  },
+  "trading": {
+    "positionAnalysis": "## Position Analysis",
+    "longPosition": "### LONG Position Scenarios",
+    "shortPosition": "### SHORT Position Scenarios",
+    "incrementalBuilding": "### Incremental Position Building",
+    "targetPriceAnalysis": "## Target Price Analysis",
+    "positionBasedReturns": "### Position-Based Returns",
+    "capitalBasedReturns": "### Capital-Based Returns",
+    "capitalAdjustment": "## Capital Adjustment Suggestions",
+    "hedgingOption": "### Option 1: Hedging (Opposite Position)",
+    "spotAdditionOption": "### Option 2: Spot Addition (Same Direction)",
+    "averagePrice": "**Average Price:**",
+    "totalQuantity": "**Total Quantity:**",
+    "positionValue": "**Position Value:**",
+    "takeProfit": "**Take Profit:**",
+    "stopLoss": "**Stop Loss:**",
+    "remainingCapital": "**Remaining Capital:**",
+    "quantity": "**Quantity:**",
+    "amount": "**Amount:**",
+    "entryPrice": "**Entry Price:**",
+    "newAveragePrice": "**New Average Price:**",
+    "currentPnL": "**Current P&L:**",
+    "targetPnL": "**Target P&L:**",
+    "gapToClose": "**Gap to Close:**",
+    "profit": "Profit",
+    "loss": "Loss",
+    "long": "LONG",
+    "short": "SHORT",
+    "openShort": "Open Short",
+    "openLong": "Open Long",
+    "buyMore": "Buy more BTC",
+    "sellMore": "Sell more BTC",
+    "cannotHedge": "Cannot hedge: entry price equals target price",
+    "cannotAddSpot": "Cannot add spot: entry price equals target price",
+    "tradingDataDetected": "🔍 Trading data detected",
+    "toolChoice": "🔍 Tool choice",
+    "analyzeTradePositionCalled": "🔧 analyzeTradePosition called",
+    "analyzeTradePositionCompleted": "✅ analyzeTradePosition completed successfully"
+  },
+  "settings": {
+    "language": "Language",
+    "selectLanguage": "Select Language",
+    "english": "English",
+    "chinese": "中文"
+  }
+}
