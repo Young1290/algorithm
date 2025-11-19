@@ -3,84 +3,81 @@ import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { ThemedText } from './themed-text';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
 import { changeLanguage } from '@/i18n';
 
 export function LanguageSelector() {
   const { t, i18n } = useTranslation();
   const currentLanguage = i18n.language;
-  const tintColor = useThemeColor({}, 'tint');
-  const textColor = useThemeColor({}, 'text');
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+  const colors = isDark ? Colors.dark : Colors.light;
 
   const handleLanguageChange = async (lang: string) => {
     await changeLanguage(lang);
   };
 
   return (
-    <View style={styles.container}>
-      <ThemedText type="defaultSemiBold" style={styles.label}>
-        {t('settings.language')}:
-      </ThemedText>
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
+    <View style={[styles.container, { backgroundColor: colors.backgroundTertiary, borderColor: colors.border }]}>
+      <TouchableOpacity
+        style={[
+          styles.button,
+          currentLanguage === 'en' && {
+            backgroundColor: colors.accent,
+          },
+        ]}
+        onPress={() => handleLanguageChange('en')}
+        activeOpacity={0.7}
+      >
+        <ThemedText
           style={[
-            styles.button,
-            currentLanguage === 'en' && {
-              backgroundColor: tintColor,
-            },
+            styles.buttonText,
+            { color: currentLanguage === 'en' ? '#fff' : colors.textSecondary },
           ]}
-          onPress={() => handleLanguageChange('en')}
         >
-          <ThemedText
-            style={[
-              styles.buttonText,
-              currentLanguage === 'en' && { color: '#fff' },
-            ]}
-          >
-            {t('settings.english')}
-          </ThemedText>
-        </TouchableOpacity>
-        <TouchableOpacity
+          EN
+        </ThemedText>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[
+          styles.button,
+          currentLanguage === 'zh' && {
+            backgroundColor: colors.accent,
+          },
+        ]}
+        onPress={() => handleLanguageChange('zh')}
+        activeOpacity={0.7}
+      >
+        <ThemedText
           style={[
-            styles.button,
-            currentLanguage === 'zh' && {
-              backgroundColor: tintColor,
-            },
+            styles.buttonText,
+            { color: currentLanguage === 'zh' ? '#fff' : colors.textSecondary },
           ]}
-          onPress={() => handleLanguageChange('zh')}
         >
-          <ThemedText
-            style={[
-              styles.buttonText,
-              currentLanguage === 'zh' && { color: '#fff' },
-            ]}
-          >
-            {t('settings.chinese')}
-          </ThemedText>
-        </TouchableOpacity>
-      </View>
+          中文
+        </ThemedText>
+      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 16,
-  },
-  label: {
-    marginBottom: 8,
-  },
-  buttonContainer: {
     flexDirection: 'row',
-    gap: 8,
-  },
-  button: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#ccc',
+    padding: 2,
+  },
+  button: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    minWidth: 50,
+    alignItems: 'center',
   },
   buttonText: {
-    fontSize: 14,
+    fontSize: 13,
+    fontWeight: '600',
   },
 });
