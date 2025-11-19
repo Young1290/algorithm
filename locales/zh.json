@@ -1,0 +1,103 @@
+{
+  "navigation": {
+    "home": "首页",
+    "explore": "探索"
+  },
+  "chat": {
+    "placeholder": "说点什么...",
+    "user": "用户",
+    "assistant": "助手"
+  },
+  "explore": {
+    "title": "探索",
+    "subtitle": "此应用程序包含示例代码以帮助您入门。",
+    "fileRouting": {
+      "title": "基于文件的路由",
+      "description": "此应用有两个屏幕：<ThemedText type=\"defaultSemiBold\">app/(tabs)/index.tsx</ThemedText> 和 <ThemedText type=\"defaultSemiBold\">app/(tabs)/explore.tsx</ThemedText>"
+    },
+    "platformSupport": {
+      "title": "Android、iOS 和 Web 支持",
+      "description": "您可以在 Android、iOS 和 Web 上打开此项目。要打开 Web 版本，请在运行此项目的终端中按 <ThemedText type=\"defaultSemiBold\">w</ThemedText>。"
+    },
+    "images": {
+      "title": "图片",
+      "description": "对于静态图片，您可以使用 <ThemedText type=\"defaultSemiBold\">@2x</ThemedText> 和 <ThemedText type=\"defaultSemiBold\">@3x</ThemedText> 后缀为不同的屏幕密度提供文件"
+    },
+    "customFonts": {
+      "title": "自定义字体",
+      "description": "打开 <ThemedText type=\"defaultSemiBold\">app/_layout.tsx</ThemedText> 查看如何加载<ThemedText style={{ fontFamily: 'SpaceMono' }}>自定义字体</ThemedText>。"
+    },
+    "lightDarkMode": {
+      "title": "亮色和暗色模式组件",
+      "description": "此模板支持亮色和暗色模式。<ThemedText type=\"defaultSemiBold\">useColorScheme()</ThemedText> 钩子可让您检查用户当前的配色方案，从而相应地调整 UI 颜色。"
+    },
+    "animations": {
+      "title": "动画",
+      "description": "此模板包含动画组件的示例。<ThemedText type=\"defaultSemiBold\">components/HelloWave.tsx</ThemedText> 组件使用强大的 <ThemedText type=\"defaultSemiBold\">react-native-reanimated</ThemedText> 库创建挥手动画。"
+    },
+    "learnMore": "了解更多"
+  },
+  "ai": {
+    "systemPrompt": "You are a Bitcoin trading analysis assistant with expert knowledge in technical analysis, position management, and risk assessment. You have access to powerful tools to analyze trading positions, calculate target prices, and suggest position adjustments.\n\nWhen users share their Bitcoin trading data, you should use the provided tools to give them detailed, actionable analysis. Always provide clear insights on profit/loss potential, risk management, and strategic recommendations.\n\nBe conversational, friendly, and focused on helping users make informed trading decisions.",
+    "systemPromptChinese": "你是一个比特币交易分析助手，拥有技术分析、仓位管理和风险评估方面的专业知识。你可以使用强大的工具来分析交易仓位、计算目标价格并建议仓位调整。\n\n当用户分享他们的比特币交易数据时，你应该使用提供的工具为他们提供详细、可操作的分析。始终提供关于盈亏潜力、风险管理和战略建议的清晰见解。\n\n保持对话友好，专注于帮助用户做出明智的交易决策。",
+    "tools": {
+      "analyzeTradePosition": {
+        "description": "Analyzes Bitcoin trading positions including P&L calculation, risk assessment, and incremental building strategies",
+        "descriptionChinese": "分析比特币交易仓位，包括盈亏计算、风险评估和增量建仓策略"
+      },
+      "calculateTargetPrices": {
+        "description": "Calculates target exit prices needed to achieve desired return percentages for both position-based and capital-based scenarios",
+        "descriptionChinese": "计算达到期望收益率所需的目标退出价格，包括基于仓位和基于资金的场景"
+      },
+      "suggestPositionAdjustment": {
+        "description": "Suggests position adjustment strategies (hedging or spot addition) to reach target prices or returns",
+        "descriptionChinese": "建议仓位调整策略（对冲或现货加仓）以达到目标价格或收益率"
+      }
+    }
+  },
+  "trading": {
+    "positionAnalysis": "## 仓位分析",
+    "longPosition": "### 多头仓位场景",
+    "shortPosition": "### 空头仓位场景",
+    "incrementalBuilding": "### 增量建仓",
+    "targetPriceAnalysis": "## 目标价格分析",
+    "positionBasedReturns": "### 基于仓位的收益",
+    "capitalBasedReturns": "### 基于资金的收益",
+    "capitalAdjustment": "## 资金调整建议",
+    "hedgingOption": "### 方案一：对冲（反向仓位）",
+    "spotAdditionOption": "### 方案二：现货加仓（同方向）",
+    "averagePrice": "**平均价格：**",
+    "totalQuantity": "**总数量：**",
+    "positionValue": "**仓位价值：**",
+    "takeProfit": "**止盈：**",
+    "stopLoss": "**止损：**",
+    "remainingCapital": "**剩余资金：**",
+    "quantity": "**数量：**",
+    "amount": "**金额：**",
+    "entryPrice": "**入场价格：**",
+    "newAveragePrice": "**新平均价格：**",
+    "currentPnL": "**当前盈亏：**",
+    "targetPnL": "**目标盈亏：**",
+    "gapToClose": "**需要弥补的差距：**",
+    "profit": "盈利",
+    "loss": "亏损",
+    "long": "多头",
+    "short": "空头",
+    "openShort": "开空头",
+    "openLong": "开多头",
+    "buyMore": "买入更多 BTC",
+    "sellMore": "卖出更多 BTC",
+    "cannotHedge": "无法对冲：入场价格等于目标价格",
+    "cannotAddSpot": "无法加仓：入场价格等于目标价格",
+    "tradingDataDetected": "🔍 检测到交易数据",
+    "toolChoice": "🔍 工具选择",
+    "analyzeTradePositionCalled": "🔧 调用 analyzeTradePosition",
+    "analyzeTradePositionCompleted": "✅ analyzeTradePosition 成功完成"
+  },
+  "settings": {
+    "language": "语言",
+    "selectLanguage": "选择语言",
+    "english": "English",
+    "chinese": "中文"
+  }
+}
