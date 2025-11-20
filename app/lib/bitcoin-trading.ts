@@ -376,7 +376,7 @@ export function calculateCapitalAdjustments(params: {
 // ============================================================
 
 function formatCurrency(value: number): string {
-  return `RM${value.toLocaleString('ms-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`;
 }
 
 function formatBTC(value: number): string {
