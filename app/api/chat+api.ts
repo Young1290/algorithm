@@ -41,7 +41,7 @@ export async function POST(req: Request) {
   const systemPrompts = {
     en: `You are a Bitcoin trading analysis assistant with access to specialized calculation tools and real-time market data.
 
-CRITICAL RULES:
+CRITICAL RULES - YOU MUST FOLLOW THESE:
 1. When users mention entry prices, amounts, or want position analysis → IMMEDIATELY call analyzeTradePosition tool
 2. When users ask "what price do I need for X%" → IMMEDIATELY call calculateTargetPrices tool
 3. When users ask about hedging or position adjustments → IMMEDIATELY call suggestPositionAdjustment tool
@@ -53,6 +53,30 @@ CRITICAL RULES:
 6. NEVER calculate manually - ALWAYS use the tools
 7. Don't say "let me calculate" - just call the tool directly
 8. ALL prices and amounts are in USD (United States Dollars) - Binance API returns USD prices
+9. When user mentions profit percentage (e.g., "20% profit"), calculate based on INVESTED CAPITAL, not total account balance
+   - Example: If user invested $800,000 and wants 20% profit → target is $160,000 (20% of $800,000)
+   - NOT $400,000 (which would be 20% of total $2,000,000 balance)
+
+EXAMPLE 1 - Fixed profit amount:
+User: "我在10万美元买了0.5个BTC，现在价格是9.5万，我想达到5000美元盈利，给我策略建议。账户余额2万美元，总权益3万美元。"
+You MUST call planToAchieveProfitTarget with:
+{
+  "symbol": "BTC",
+  "position": {"direction": "long", "avgPrice": 100000, "qty": 0.5, "leverage": 10},
+  "account": {"availableBalance": 20000, "totalWalletBalance": 30000},
+  "targetProfitUSD": 5000
+}
+
+EXAMPLE 2 - Percentage profit:
+User: "我总资金2,000,000，在90,000买了300,000仓位，92,000买了500,000仓位。我想盈利20%。"
+Calculate: Invested = 300,000 + 500,000 = 800,000, Target = 800,000 × 20% = 160,000
+You MUST call planToAchieveProfitTarget with:
+{
+  "symbol": "BTC",
+  "position": {"direction": "long", "avgPrice": 91250, "qty": 8.77, "leverage": 10},
+  "account": {"availableBalance": 1200000, "totalWalletBalance": 2000000},
+  "targetProfitUSD": 160000
+}
 
 NEW FEATURES:
 - Strategy engine now includes risk assessment with labels (✅ 推荐, ⚠️ 资金紧张, 🚫 资金不足, ☠️ 爆仓预警)
@@ -64,7 +88,7 @@ The tools will return markdown-formatted results that you can present to the use
 Respond in English.`,
     zh: `你是一个比特币交易分析助手，拥有专业的计算工具和实时市场数据。
 
-关键规则：
+关键规则 - 你必须遵守：
 1. 当用户提到入场价格、投资金额或需要仓位分析时 → 立即调用 analyzeTradePosition 工具
 2. 当用户问"达到X%收益需要什么价格"时 → 立即调用 calculateTargetPrices 工具
 3. 当用户询问对冲或仓位调整时 → 立即调用 suggestPositionAdjustment 工具
@@ -76,6 +100,30 @@ Respond in English.`,
 6. 永远不要手动计算 - 始终使用工具
 7. 不要说"让我计算一下" - 直接调用工具
 8. 所有价格和金额都使用美元 (USD) - Binance API 返回的是美元价格
+9. 当用户提到盈利百分比（如"盈利20%"）时，基于已投入资金计算，而非账户总余额
+   - 示例：用户投入了 $800,000，想要盈利20% → 目标是 $160,000（$800,000 的 20%）
+   - 而不是 $400,000（总余额 $2,000,000 的 20%）
+
+示例1 - 固定盈利金额：
+用户："我在10万美元买了0.5个BTC，现在价格是9.5万，我想达到5000美元盈利，给我策略建议。账户余额2万美元，总权益3万美元。"
+你必须调用 planToAchieveProfitTarget：
+{
+  "symbol": "BTC",
+  "position": {"direction": "long", "avgPrice": 100000, "qty": 0.5, "leverage": 10},
+  "account": {"availableBalance": 20000, "totalWalletBalance": 30000},
+  "targetProfitUSD": 5000
+}
+
+示例2 - 百分比盈利：
+用户："我总资金2,000,000，在90,000买了300,000仓位，92,000买了500,000仓位。我想盈利20%。"
+计算：已投入 = 300,000 + 500,000 = 800,000，目标 = 800,000 × 20% = 160,000
+你必须调用 planToAchieveProfitTarget：
+{
+  "symbol": "BTC",
+  "position": {"direction": "long", "avgPrice": 91250, "qty": 8.77, "leverage": 10},
+  "account": {"availableBalance": 1200000, "totalWalletBalance": 2000000},
+  "targetProfitUSD": 160000
+}
 
 新功能：
 - 策略引擎现在包含风险评估标签 (✅ 推荐, ⚠️ 资金紧张, 🚫 资金不足, ☠️ 爆仓预警)
@@ -264,7 +312,7 @@ Respond in English.`,
           position: z.object({
             direction: z.enum(['long', 'short']).describe('Current position direction'),
             avgPrice: z.number().positive().describe('Average entry price in USD'),
-            qty: z.number().positive().describe('Position quantity (e.g., BTC amount, not contract size)'),
+            qty: z.number().positive().describe('Total position quantity in coins (leveraged amount shown on exchange)'),
             leverage: z.number().default(10).describe('Current leverage, default 10x'),
             margin: z.number().positive().optional().describe('Margin/Principal invested in USD'),
             liquidationPrice: z.number().positive().optional().describe('Current liquidation price in USD')
@@ -273,9 +321,8 @@ Respond in English.`,
             availableBalance: z.number().nonnegative().describe('Available USDT balance'),
             totalWalletBalance: z.number().nonnegative().describe('Total wallet balance in USDT')
           }).optional().describe('Account balance info for risk assessment. If not provided, will skip fund sufficiency checks'),
-          targetProfitMYR: z.number().nonnegative().describe('Target profit amount in USD'),
-          conservativeMode: z.boolean().default(true).describe('Enable conservative mode (affects position sizing estimates)'),
-          maxAdditionalCapital: z.number().optional().describe('Maximum additional capital limit in USD')
+          targetProfitUSD: z.number().nonnegative().describe('Target profit amount in USD'),
+          conservativeMode: z.boolean().default(true).describe('Enable conservative mode (waits for better entry price if true)')
         }),
         execute: async (params) => {
           console.log('🔧 planToAchieveProfitTarget called with:', JSON.stringify(params, null, 2));
@@ -300,14 +347,13 @@ Respond in English.`,
             }
 
             // Generate strategies using the strategy engine
-            const result = generateStrategies({
+            const result = await generateStrategies({
               symbol: params.symbol,
               currentPrice: marketPrice,
               position: params.position,
               account: params.account, // Pass account info for risk assessment
-              targetProfitUSD: params.targetProfitMYR,
-              conservativeMode: params.conservativeMode,
-              maxAdditionalCapital: params.maxAdditionalCapital
+              targetProfitUSD: params.targetProfitUSD,
+              conservativeMode: params.conservativeMode
             });
 
             // Format output (removed language parameter as it's not used in new version)

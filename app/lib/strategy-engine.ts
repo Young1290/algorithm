@@ -1,9 +1,6 @@
-// engine-strategy.ts
-// Dynamic Strategy Engine for Bitcoin Trading
-// Integrates real-time price data, strategy calculations, and risk assessment
 
 // ============================================
-// 1. Binance API Integration (保持不变)
+// 1. 外部数据源 (Binance API)
 // ============================================
 
 export async function fetchBinancePrice(symbol: string): Promise<number | null> {
@@ -11,10 +8,8 @@ export async function fetchBinancePrice(symbol: string): Promise<number | null> 
     const pair = symbol.toUpperCase().endsWith('USDT') 
       ? symbol.toUpperCase() 
       : `${symbol.toUpperCase()}USDT`;
-    
     const response = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${pair}`);
     const data = await response.json();
-    
     if (!data.price) throw new Error('Price not found');
     return parseFloat(data.price);
   } catch (error) {
@@ -28,10 +23,8 @@ export async function fetchBinance24hStats(symbol: string) {
     const pair = symbol.toUpperCase().endsWith('USDT') 
       ? symbol.toUpperCase() 
       : `${symbol.toUpperCase()}USDT`;
-    
     const response = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${pair}`);
     const data = await response.json();
-    
     return {
       price: parseFloat(data.lastPrice),
       high24h: parseFloat(data.highPrice),
@@ -47,36 +40,35 @@ export async function fetchBinance24hStats(symbol: string) {
 }
 
 // ============================================
-// 2. Interfaces & Types (新增 Account 和 Evaluation 字段)
+// 2. 核心接口定义
 // ============================================
 
+// 账户资金信息 (所有金额单位: USD)
 interface Account {
-  availableBalance: number; // 可用 USDT
-  totalWalletBalance: number; // 总权益
+  availableBalance: number;  // 账户里的闲置资金 (USD/USDT)
+  totalWalletBalance: number; // 账户总权益 (余额 + 未结盈亏 + 占用保证金) (USD/USDT)
 }
 
+// 持仓信息 (价格单位: USD)
 interface Position {
   direction: 'long' | 'short';
-  avgPrice: number;
-  qty: number;
-  leverage: number;
-  margin?: number;
-  liquidationPrice?: number; // 新增：当前强平价
+  avgPrice: number;          // 平均入场价格 (USD)
+  qty: number;               // 注意：这里指的是交易所显示的“总持仓数量”（已杠杆，单位：币）
+  leverage?: number;         // 默认 10x
 }
 
 interface StrategyParams {
   symbol: string;
-  currentPrice: number;
+  currentPrice?: number;      // 可选，不填则自动抓取 (USD)
   position: Position;
-  account?: Account; // 新增：账户资金信息 (可选，如果不传则无法评估资金)
-  targetProfitUSD: number;
-  conservativeMode?: boolean;
-  maxAdditionalCapital?: number;
+  account?: Account;          // 可选，提供后进行风控评估 (USD)
+  targetProfitUSD: number;    // 目标盈利金额 (USD)
+  conservativeMode?: boolean; // true: 等待价格更优时加仓; false: 现价加仓
 }
 
 interface StrategyEvaluation {
-  status: 'RECOMMENDED' | 'HIGH_RISK' | 'INSUFFICIENT_FUNDS' | 'INEFFICIENT';
-  label: string; // 例如 "✅ 推荐"
+  status: 'RECOMMENDED' | 'HIGH_RISK' | 'INSUFFICIENT_FUNDS';
+  label: string; // e.g., "✅ 推荐"
   reason: string;
 }
 
@@ -85,43 +77,56 @@ interface Strategy {
   title: string;
   type: string;
   action: string;
-  quantity?: string;
-  price?: string;
-  requiredCapital?: string;
-  targetPrice?: string;
-  limitPrice?: string;
+  quantity: string;           // 建议操作数量 (币)
+  price: string;              // 建议操作价格 (USD)
+  
+  // 资金数据 (所有金额单位: USD)
+  marginRequired: string;     // 实际扣款/本金 (USD)
+  notionalValue: string;      // 操控名义价值 (USD)
+  leverageUsed: number;       // 使用的杠杆倍数
+  
+  targetPrice?: string;       // 预期离场/止盈价格 (USD)
+  limitPrice?: string;        // 挂单价格 (USD, 针对 Strat 5)
+  
   note: string;
-  risk: string;
-  composition?: Array<{ action: string; qty: string }>;
   description?: string;
-  evaluation?: StrategyEvaluation; // 新增：策略评估结果
+  evaluation: StrategyEvaluation; // 风控评估结果
+  
+  // 混合策略专用
+  composition?: Array<{ action: string; qty: string }>;
 }
 
 // ============================================
-// 3. Helper Functions (新增风险评估逻辑)
+// 3. 辅助计算函数
 // ============================================
 
-export function calculateRequiredQty(
+// 核心数学：计算达成目标所需的数量
+// 所有价格和盈利单位: USD
+function calculateRequiredQty(
   position: Position,
-  targetProfitUSD: number,
-  addPrice: number,
-  targetPrice: number
+  targetProfitUSD: number,  // 目标盈利 (USD)
+  addPrice: number,         // 加仓价格 (USD)
+  targetPrice: number       // 目标离场价格 (USD)
 ): number {
+  const dir = position.direction === 'long' ? 1 : -1;
   let addQty = 0;
+
+  // 公式推导：
+  // TotalPnL = (TargetPrice - NewAvg) * (OldQty + AddQty) * dir
+  // 展开后求解 AddQty
   
   if (position.direction === 'long') {
+    // Long: (Target - AvgOld)*OldQty + (Target - AddPrice)*AddQty = TargetProfit
     const profitFromOld = (targetPrice - position.avgPrice) * position.qty;
     const remainder = targetProfitUSD - profitFromOld;
     const profitPerUnitNew = targetPrice - addPrice;
-    
-    if (profitPerUnitNew <= 0) return Infinity;
+    if (profitPerUnitNew <= 0) return Infinity; 
     addQty = remainder / profitPerUnitNew;
   } else {
-    // Short
+    // Short: (AvgOld - Target)*OldQty + (AddPrice - Target)*AddQty = TargetProfit
     const profitFromOld = (position.avgPrice - targetPrice) * position.qty;
     const remainder = targetProfitUSD - profitFromOld;
     const profitPerUnitNew = addPrice - targetPrice;
-    
     if (profitPerUnitNew <= 0) return Infinity;
     addQty = remainder / profitPerUnitNew;
   }
@@ -129,224 +134,284 @@ export function calculateRequiredQty(
   return addQty;
 }
 
-// 估算加仓后的新强平价 (简化模型)
+// 估算新爆仓价 (简易模型)
+// 价格单位: USD
 function estimateNewLiquidationPrice(
   position: Position,
-  addQty: number,
-  addPrice: number,
-  newAvgPrice: number
+  addQty: number,    // 加仓数量 (币)
+  addPrice: number,  // 加仓价格 (USD)
+  leverage: number   // 杠杆倍数
 ): number {
-  // 这是一个近似计算，实际强平价取决于维持保证金率(MMR)
-  // 基础公式: LiqPrice = EntryPrice * (1 - 1/Leverage + MMR) [Long]
-  // 我们用简化的距离比例来估算
-  const leverage = position.leverage || 10;
+  // 计算混合后的新均价
   const totalQty = position.qty + addQty;
+  const newAvgPrice = ((position.qty * position.avgPrice) + (addQty * addPrice)) / totalQty;
+  
+  // 粗略估算爆仓线 (10x -> 10% 波动)
+  // 保守起见，我们假设维持保证金率后，大约 9.5% 的反向波动会爆仓
+  const buffer = (1 / leverage) - 0.005; 
   
   if (position.direction === 'long') {
-    // Long: 爆仓价在均价下方
-    return newAvgPrice * (1 - (1 / leverage) + 0.005); // 0.005 是缓冲
+    return newAvgPrice * (1 - buffer);
   } else {
-    // Short: 爆仓价在均价上方
-    return newAvgPrice * (1 + (1 / leverage) - 0.005);
+    return newAvgPrice * (1 + buffer);
   }
 }
 
-// 核心评估函数
+// 🔥 核心风控引擎：60% 水位线检查
 function evaluateStrategySuitability(
-  requiredCapital: number,
+  strategyMargin: number,
+  currentMarginUsed: number,
   account: Account | undefined,
   strategyType: string,
   currentPrice: number,
   newLiquidationPrice?: number
 ): StrategyEvaluation {
-  // 1. 如果没有账户信息，默认不做资金检查，但在报告中注明
+  // 如果没有账户信息，跳过资金检查
   if (!account) {
     return {
       status: 'RECOMMENDED',
       label: 'ℹ️ 未检测资金',
-      reason: '未提供账户余额，无法评估资金充足性。'
+      reason: '未提供账户信息，无法评估资金充足性。'
     };
   }
-
-  // 2. 资金不足检查
-  if (requiredCapital > account.availableBalance) {
+  
+  const { availableBalance, totalWalletBalance } = account;
+  
+  // 1. 余额硬性检查
+  if (strategyMargin > availableBalance) {
     return {
       status: 'INSUFFICIENT_FUNDS',
       label: '🚫 资金不足',
-      reason: `需 $${requiredCapital.toFixed(2)}，可用仅 $${account.availableBalance.toFixed(2)}`
+      reason: `需本金 $${strategyMargin.toLocaleString()}，可用余额仅 $${availableBalance.toLocaleString()}。`
     };
   }
 
-  // 3. 资金占比过高检查 (All-in 风险)
-  const capitalUsagePct = requiredCapital / account.availableBalance;
-  if (capitalUsagePct > 0.8) {
+  // 2. 60% 保守派水位线检查
+  // 总占用 = 当前已用 + 策略新增
+  const totalUsedMargin = currentMarginUsed + strategyMargin;
+  const utilizationRate = totalUsedMargin / totalWalletBalance;
+  
+  if (utilizationRate > 0.60) {
     return {
       status: 'HIGH_RISK',
-      label: '⚠️ 资金紧张',
-      reason: `将占用 ${Math.round(capitalUsagePct * 100)}% 可用资金，容错率极低。`
+      label: '⚠️ 超过安全水位',
+      reason: `执行后总仓位占用 ${(utilizationRate * 100).toFixed(1)}% 资金 (>60%)，风险较高。`
     };
   }
 
-  // 4. 爆仓风险检查 (针对加仓)
+  // 3. 爆仓价逼近检查 (针对加仓)
   if (strategyType === 'leverage_add' && newLiquidationPrice) {
     const dist = Math.abs(currentPrice - newLiquidationPrice) / currentPrice;
-    // 如果新爆仓价距离现价小于 3%，极度危险
-    if (dist < 0.03) {
+    if (dist < 0.03) { // 3% 极度危险区
       return {
         status: 'HIGH_RISK',
         label: '☠️ 爆仓预警',
-        reason: `加仓后爆仓价 ($${newLiquidationPrice.toFixed(2)}) 极度逼近现价，风险极高。`
+        reason: `爆仓价将逼近现价 ${(dist * 100).toFixed(1)}%，极易归零。`
       };
     }
   }
 
   return {
     status: 'RECOMMENDED',
-    label: '✅ 推荐',
-    reason: '资金充足，风险在可控范围内。'
+    label: '✅ 推荐 (安全)',
+    reason: `总资金占用 ${(utilizationRate * 100).toFixed(1)}%，处于 60% 安全线内。`
   };
 }
 
 // ============================================
-// 4. Main Logic: Generate Strategies
+// 4. 主逻辑：策略生成器
 // ============================================
 
-export function generateStrategies(params: StrategyParams) {
-  const { symbol, currentPrice, position, account, targetProfitUSD, conservativeMode = true } = params;
-  const leverage = position.leverage || 10;
+export async function generateStrategies(params: StrategyParams) {
+  const { symbol, position, account, targetProfitUSD, conservativeMode = true } = params;
   
-  // Calculate current P&L
+  // 1. 获取/确认价格
+  const currentPrice = params.currentPrice || await fetchBinancePrice(symbol);
+  if (!currentPrice) return { error: "无法获取市场价格" };
+
+  const leverage = position.leverage || 10; // 系统默认杠杆
+
+  // 2. 解析当前持仓 (Input Interpretation)
+  // 用户输入的是 Leveraged Qty (名义总数)
+  const currentNotional = position.qty * position.avgPrice; // 名义价值
+  const currentMarginUsed = currentNotional / leverage;     // 倒推当前占用保证金
+
+  // 3. 计算当前 PnL
   const dir = position.direction === 'long' ? 1 : -1;
   const currentPnl = (currentPrice - position.avgPrice) * position.qty * dir;
   const pnlDiff = targetProfitUSD - currentPnl;
-  
-  // Strategy 5: Target Met or Near Target (Check first)
+
+  // ------------------------------------------------------
+  // Strategy 5: 临界点检查 (Priority Check)
+  // ------------------------------------------------------
   if (pnlDiff <= 0 || currentPnl >= targetProfitUSD * 0.85) {
-    const actionType = pnlDiff <= 0 ? "TARGET_MET" : "NEAR_TARGET";
     const closePrice = position.direction === 'long' 
       ? position.avgPrice + (targetProfitUSD / position.qty)
       : position.avgPrice - (targetProfitUSD / position.qty);
 
+    const isMet = pnlDiff <= 0;
     return {
-      status: actionType,
-      currentPnl: currentPnl.toFixed(2),
-      targetPnl: targetProfitUSD,
-      gap: pnlDiff.toFixed(2),
+      status: isMet ? "TARGET_MET" : "NEAR_TARGET",
+      currentStatus: {
+        price: currentPrice,
+        pnl: currentPnl.toFixed(2),
+        marginUsed: currentMarginUsed.toFixed(2)
+      },
       strategies: [{
         id: 5,
-        title: pnlDiff <= 0 ? "🎉 目标已达成" : "🎯 盈利逼近目标",
+        title: isMet ? "🎉 目标已达成" : "🎯 盈利逼近目标",
         type: 'limit_close',
-        action: `Limit Close`,
+        action: 'Limit Close',
+        quantity: position.qty.toFixed(4),
+        price: currentPrice.toFixed(2),
         limitPrice: closePrice.toFixed(2),
-        description: pnlDiff <= 0 
-          ? `当前盈利已覆盖目标。建议立即止盈。`
-          : `当前盈利已达目标的 ${(currentPnl/targetProfitUSD*100).toFixed(1)}%。建议在 $${closePrice.toFixed(2)} 挂单。`,
-        note: '无需额外资金',
-        risk: 'Low',
-        evaluation: { status: 'RECOMMENDED', label: '✅ 推荐', reason: '锁定利润最佳时机' }
+        marginRequired: '0.00',
+        notionalValue: '0.00',
+        leverageUsed: 0,
+        note: '无需资金。',
+        description: isMet ? '目标已覆盖，建议立即止盈。' : `已达目标85%，建议在 $${closePrice.toFixed(2)} 挂单离场。`,
+        evaluation: { status: 'RECOMMENDED', label: '✅ 最佳方案', reason: '锁定利润' }
       }]
     };
   }
 
   const strategies: Strategy[] = [];
-  const addPrice = conservativeMode ? currentPrice * 0.995 : currentPrice;
-  const recoveryTargetPrice = position.direction === 'long' 
-    ? currentPrice * 1.015 
-    : currentPrice * 0.985;
+  
+  // 设定加仓价格：保守模式下给予 0.5% 的缓冲
+  const addPrice = conservativeMode 
+    ? (position.direction === 'long' ? currentPrice * 0.995 : currentPrice * 1.005) 
+    : currentPrice;
+  
+  // 设定反弹目标：加仓后，我们期望价格回到哪里就能回本？
+  // 这是一个中间值，比完全回本容易，比现价远一点 (1.5% 波动)
+  const recoveryTargetPrice = position.direction === 'long' ? currentPrice * 1.015 : currentPrice * 0.985;
 
-  // --- Strategy 1: 10x Leverage Add ---
+  // ------------------------------------------------------
+  // Strategy 1: 10x 杠杆加仓 (Aggressive)
+  // ------------------------------------------------------
   const qtyLev = calculateRequiredQty(position, targetProfitUSD, addPrice, recoveryTargetPrice);
   
   if (qtyLev > 0 && isFinite(qtyLev)) {
-    const marginRequired = (qtyLev * addPrice) / leverage;
+    const notionalVal = qtyLev * addPrice;
+    const marginReq = notionalVal / leverage; // 10x
+    const newLiqPrice = estimateNewLiquidationPrice(position, qtyLev, addPrice, leverage);
     
-    // 计算新均价和新爆仓价用于评估
-    const newTotalQty = position.qty + qtyLev;
-    const newAvgPrice = ((position.qty * position.avgPrice) + (qtyLev * addPrice)) / newTotalQty;
-    const newLiqPrice = estimateNewLiquidationPrice(position, qtyLev, addPrice, newAvgPrice);
-    
-    const evaluation = evaluateStrategySuitability(marginRequired, account, 'leverage_add', currentPrice, newLiqPrice);
+    const evaluation = evaluateStrategySuitability(
+      marginReq, currentMarginUsed, account, 'leverage_add', currentPrice, newLiqPrice
+    );
 
     strategies.push({
       id: 1,
-      title: `🔥 ${leverage}x 杠杆加仓`,
+      title: `🔥 10x 杠杆加仓`,
       type: 'leverage_add',
-      action: position.direction === 'long' ? 'Long Buy' : 'Short Sell',
+      action: position.direction === 'long' ? 'Buy Long' : 'Sell Short',
       quantity: qtyLev.toFixed(4),
       price: addPrice.toFixed(2),
-      requiredCapital: marginRequired.toFixed(2),
-      note: `价格反弹至 $${recoveryTargetPrice.toFixed(2)} 即可达标。`,
-      risk: 'High',
-      description: `新均价: $${newAvgPrice.toFixed(2)} | 预估新爆仓价: $${newLiqPrice.toFixed(2)}`,
-      evaluation // 注入评估结果
+      marginRequired: marginReq.toFixed(2),
+      notionalValue: notionalVal.toFixed(2),
+      leverageUsed: leverage,
+      targetPrice: recoveryTargetPrice.toFixed(2),
+      note: `利用 10x 杠杆降低均价。`,
+      description: `价格微弹至 $${recoveryTargetPrice.toFixed(2)} 即可达标。`,
+      evaluation
     });
   }
 
-  // --- Strategy 2: Spot Buy ---
+  // ------------------------------------------------------
+  // Strategy 2: 现货买入 (Conservative)
+  // ------------------------------------------------------
   const qtySpot = calculateRequiredQty(position, targetProfitUSD, addPrice, recoveryTargetPrice);
   
   if (qtySpot > 0 && isFinite(qtySpot)) {
-    const cashRequired = qtySpot * addPrice; // Spot uses 100% cash
-    const evaluation = evaluateStrategySuitability(cashRequired, account, 'spot_buy', currentPrice);
+    const notionalVal = qtySpot * addPrice;
+    const marginReq = notionalVal; // 1x (全额)
+    
+    const evaluation = evaluateStrategySuitability(
+      marginReq, currentMarginUsed, account, 'spot_buy', currentPrice
+    );
 
     strategies.push({
       id: 2,
-      title: `🛡️ 买入现货`,
+      title: `🛡️ 买入现货 (Spot)`,
       type: 'spot_buy',
       action: 'Spot Buy',
       quantity: qtySpot.toFixed(4),
       price: addPrice.toFixed(2),
-      requiredCapital: cashRequired.toFixed(2),
-      note: `使用 1:1 实盘资金，无爆仓风险。`,
-      risk: 'Low',
+      marginRequired: marginReq.toFixed(2),
+      notionalValue: notionalVal.toFixed(2),
+      leverageUsed: 1,
+      note: `无爆仓风险，双保险策略。`,
+      description: `需全额支付资金，适合长期看好。`,
       evaluation
     });
   }
 
-  // --- Strategy 3: Hedging ---
+  // ------------------------------------------------------
+  // Strategy 3: 10x 对冲 (Hedging)
+  // ------------------------------------------------------
   const hedgeDir = position.direction === 'long' ? 'short' : 'long';
   const hedgeTargetPrice = hedgeDir === 'short' ? currentPrice * 0.98 : currentPrice * 1.02;
   const priceDelta = Math.abs(currentPrice - hedgeTargetPrice);
   
-  // 只有当 priceDelta 足够大才生成策略，防止除以0
   if (priceDelta > 0) {
+    // 计算需多少量才能在 priceDelta 波动中赚回 Gap
+    // 简化逻辑：Gap / Delta
     const qtyHedge = pnlDiff / priceDelta;
-    const hedgeMargin = (qtyHedge * currentPrice) / leverage;
-    const evaluation = evaluateStrategySuitability(hedgeMargin, account, 'hedge', currentPrice);
+    const notionalVal = qtyHedge * currentPrice;
+    const marginReq = notionalVal / leverage;
+
+    const evaluation = evaluateStrategySuitability(
+      marginReq, currentMarginUsed, account, 'hedge', currentPrice
+    );
 
     strategies.push({
       id: 3,
-      title: `⚖️ 对冲策略`,
+      title: `⚖️ 对冲策略 (10x)`,
       type: 'hedge',
-      action: hedgeDir === 'short' ? `Open Short (${leverage}x)` : `Open Long (${leverage}x)`,
+      action: hedgeDir === 'short' ? 'Open Short' : 'Open Long',
       quantity: qtyHedge.toFixed(4),
-      requiredCapital: hedgeMargin.toFixed(2),
+      price: currentPrice.toFixed(2),
+      marginRequired: marginReq.toFixed(2),
+      notionalValue: notionalVal.toFixed(2),
+      leverageUsed: leverage,
       targetPrice: hedgeTargetPrice.toFixed(2),
-      note: `利用反向波动在 $${hedgeTargetPrice.toFixed(2)} 赚回差额。`,
-      risk: 'Medium',
+      note: `反向开单，利用波动赚取差价。`,
       evaluation
     });
 
-    // --- Strategy 4: Mixed Action ---
-    // 只有在 Strategy 1 和 3 都存在时才生成混合策略
+    // ------------------------------------------------------
+    // Strategy 4: 混合策略 (Mixed)
+    // ------------------------------------------------------
+    // 仅当 Strat 1 和 Strat 3 都存在时计算
     if (strategies.some(s => s.id === 1)) {
-       const mixAddQty = qtyLev / 2;
-       const mixHedgeQty = qtyHedge / 2;
-       const mixCapital = (mixAddQty * addPrice / leverage) + (mixHedgeQty * currentPrice / leverage);
-       const evaluationMix = evaluateStrategySuitability(mixCapital, account, 'mixed', currentPrice);
+      const mixAddQty = qtyLev / 2;
+      const mixHedgeQty = qtyHedge / 2;
+      
+      const valAdd = mixAddQty * addPrice;
+      const valHedge = mixHedgeQty * currentPrice;
+      
+      const marginMix = (valAdd / leverage) + (valHedge / leverage); // 都是 10x
+      const notionalMix = valAdd + valHedge;
 
-       strategies.push({
+      const evaluationMix = evaluateStrategySuitability(
+        marginMix, currentMarginUsed, account, 'mixed', currentPrice
+      );
+
+      strategies.push({
         id: 4,
-        title: `🍹 混合策略`,
+        title: `🍹 混合策略 (Balanced)`,
         type: 'mixed',
         action: 'Combined',
+        quantity: 'N/A', // 组合操作
+        price: 'Market',
+        marginRequired: marginMix.toFixed(2),
+        notionalValue: notionalMix.toFixed(2),
+        leverageUsed: leverage,
+        note: `半仓补均价，半仓对冲，平衡风险。`,
         composition: [
           { action: position.direction === 'long' ? 'Add Long' : 'Add Short', qty: mixAddQty.toFixed(4) },
           { action: hedgeDir === 'short' ? 'Open Short' : 'Open Long', qty: mixHedgeQty.toFixed(4) }
         ],
-        requiredCapital: mixCapital.toFixed(2),
-        note: `半仓补单，半仓对冲，平衡风险。`,
-        risk: 'Medium',
         evaluation: evaluationMix
       });
     }
@@ -359,55 +424,77 @@ export function generateStrategies(params: StrategyParams) {
       price: currentPrice,
       pnl: currentPnl.toFixed(2),
       gap: pnlDiff.toFixed(2),
-      gapPercent: ((pnlDiff / targetProfitUSD) * 100).toFixed(1)
+      leverageInfo: {
+        inputQtyIsLeveraged: true,
+        totalNotional: currentNotional.toFixed(2), // 用户输入的大数
+        estimatedMargin: currentMarginUsed.toFixed(2) // 系统推算的本金
+      }
     },
     strategies
   };
 }
 
 // ============================================
-// 5. Format Strategy Output (展示评估标签)
+// 5. 输出格式化 (Markdown Report)
 // ============================================
 
 export function formatStrategyOutput(result: any): string {
-  const { currentStatus, strategies } = result;
+  const { currentStatus, strategies, symbol } = result;
   
-  let output = `## 📊 策略引擎分析报告\n\n`;
+  let output = `## 📊 策略引擎分析报告 (10x 模式)\n\n`;
   
   if (currentStatus) {
-    output += `### 1. 账户与持仓概况\n`;
-    output += `> **当前价格**: $${currentStatus.price}\n`;
+    const marginNum = parseFloat(currentStatus.leverageInfo.estimatedMargin);
+    const notionalNum = parseFloat(currentStatus.leverageInfo.totalNotional);
+    
+    output += `### 1. 账户持仓诊断\n`;
+    output += `> **当前市价**: $${currentStatus.price}\n`;
     output += `> **当前盈亏**: $${currentStatus.pnl}\n`;
-    output += `> **目标差距**: $${currentStatus.gap} (${currentStatus.gapPercent}%)\n\n`;
+    output += `> **持仓总量 (名义)**: $${notionalNum.toLocaleString()} (您输入的持仓)\n`;
+    output += `> **占用本金 (估算)**: $${marginNum.toLocaleString()} (10x 倒推)\n`;
+    output += `\n`;
   }
   
-  output += `### 2. 建议行动方案\n\n`;
+  output += `### 2. 建议行动方案 (基于 60% 风控线)\n\n`;
   
-  strategies.forEach((strategy: Strategy) => {
-    // 提取评估标签
-    const evalLabel = strategy.evaluation ? strategy.evaluation.label : '';
-    const evalReason = strategy.evaluation ? strategy.evaluation.reason : '';
+  strategies.forEach((s: Strategy) => {
+    const label = s.evaluation?.label || '';
+    const reason = s.evaluation?.reason || '';
     
-    // 标题带上标签 (例如: ✅ 推荐 | 🔥 10x 杠杆加仓)
-    output += `#### ${evalLabel} | ${strategy.title}\n`;
+    output += `#### ${label} | ${s.title}\n`;
     
-    // 如果有评估原因，且不是推荐状态，高亮显示原因
-    if (strategy.evaluation && strategy.evaluation.status !== 'RECOMMENDED') {
-       output += `> **⚠️ 警告**: ${evalReason}\n\n`;
-    } else if (evalReason) {
-       output += `> **💡 评估**: ${evalReason}\n\n`;
+    // 风控提示框
+    if (s.evaluation && s.evaluation.status !== 'RECOMMENDED') {
+       output += `> **⚠️ 风控警告**: ${reason}\n\n`;
+    } else {
+       output += `> **💡 风控评估**: ${reason}\n\n`;
     }
 
-    output += `- **动作**: ${strategy.action}\n`;
-    if (strategy.quantity) output += `- **数量**: ${strategy.quantity} ${result.symbol}\n`;
-    if (strategy.requiredCapital) output += `- **所需资金**: **$${strategy.requiredCapital}**\n`;
-    if (strategy.price) output += `- **执行价格**: $${strategy.price}\n`;
-    
-    if (strategy.description) {
-      output += `- **数据预测**: ${strategy.description}\n`;
+    // 核心数据展示
+    if (s.type === 'mixed' && s.composition) {
+      output += `- **组合动作**:\n`;
+      s.composition.forEach(c => output += `  - ${c.action}: ${c.qty} ${symbol}\n`);
+    } else {
+      output += `- **动作**: ${s.action} ${s.quantity} ${symbol}\n`;
     }
     
-    output += `- **逻辑**: ${strategy.note}\n`;
+    if (s.marginRequired) {
+      const margin = parseFloat(s.marginRequired).toLocaleString();
+      const notional = parseFloat(s.notionalValue).toLocaleString();
+      
+      output += `- **所需本金 (Margin)**: **$${margin}**`;
+      if (s.leverageUsed > 1) {
+        output += ` (10x 杠杆)\n`;
+        output += `- *操控名义价值*: $${notional}\n`;
+      } else {
+        output += ` (全额现货)\n`;
+      }
+    }
+    
+    if (s.price !== 'Market') output += `- **执行价格**: $${s.price}\n`;
+    if (s.limitPrice) output += `- **挂单价格**: $${s.limitPrice}\n`;
+    if (s.description) output += `- **详情**: ${s.description}\n`;
+    
     output += `\n---\n`;
   });
   
