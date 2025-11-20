@@ -88,6 +88,10 @@ interface Strategy {
   targetPrice?: string;       // 预期离场/止盈价格 (USD)
   limitPrice?: string;        // 挂单价格 (USD, 针对 Strat 5)
   
+  // 🔥 风险管理字段
+  newLiquidationPrice?: string; // 加仓后的新强平价 (USD)
+  stopLossPrice?: string;       // 建议止损价 (USD)
+  
   note: string;
   description?: string;
   evaluation: StrategyEvaluation; // 风控评估结果
@@ -99,6 +103,41 @@ interface Strategy {
 // ============================================
 // 3. 辅助计算函数
 // ============================================
+
+// 🔥 计算全仓强平价 (基于余额抗单能力)
+function calculateCrossLiquidationPrice(
+  avgPrice: number,
+  totalQty: number,
+  walletBalance: number,
+  direction: 'long' | 'short'
+): number {
+  // 逻辑：当 亏损额 = 钱包余额 时爆仓
+  // 亏损额 = |Price - Avg| * Qty
+  // 所以 |Price - Avg| = Balance / Qty
+  // 允许跌幅 (Distance) = Balance / Qty
+  
+  const safetyDistance = walletBalance / totalQty;
+  
+  if (direction === 'long') {
+    const liqPrice = avgPrice - safetyDistance;
+    return liqPrice > 0 ? liqPrice : 0; // 价格不能为负
+  } else {
+    return avgPrice + safetyDistance;
+  }
+}
+
+// 🔥 计算建议止损价 (默认 2.5% - 3% 波动)
+function calculateStopLossPrice(
+  avgPrice: number,
+  direction: 'long' | 'short',
+  riskPercent: number = 0.025 // 默认 2.5% (10x杠杆下亏损25%)
+): number {
+  if (direction === 'long') {
+    return avgPrice * (1 - riskPercent);
+  } else {
+    return avgPrice * (1 + riskPercent);
+  }
+}
 
 // 核心数学：计算达成目标所需的数量
 // 所有价格和盈利单位: USD
@@ -294,7 +333,18 @@ export async function generateStrategies(params: StrategyParams) {
   if (qtyLev > 0 && isFinite(qtyLev)) {
     const notionalVal = qtyLev * addPrice;
     const marginReq = notionalVal / leverage; // 10x
-    const newLiqPrice = estimateNewLiquidationPrice(position, qtyLev, addPrice, leverage);
+    
+    // 🔥 计算加仓后的混合状态
+    const newTotalQty = position.qty + qtyLev;
+    const newAvgPrice = ((position.qty * position.avgPrice) + (qtyLev * addPrice)) / newTotalQty;
+    
+    // 🔥 计算新强平价 (基于全仓余额)
+    const newLiqPrice = account 
+      ? calculateCrossLiquidationPrice(newAvgPrice, newTotalQty, account.totalWalletBalance, position.direction)
+      : estimateNewLiquidationPrice(position, qtyLev, addPrice, leverage);
+    
+    // 🔥 计算建议止损价 (2.5% 波动)
+    const newStopLoss = calculateStopLossPrice(newAvgPrice, position.direction, 0.025);
     
     const evaluation = evaluateStrategySuitability(
       marginReq, currentMarginUsed, account, 'leverage_add', currentPrice, newLiqPrice
@@ -311,7 +361,10 @@ export async function generateStrategies(params: StrategyParams) {
       notionalValue: notionalVal.toFixed(2),
       leverageUsed: leverage,
       targetPrice: recoveryTargetPrice.toFixed(2),
-      note: `利用 10x 杠杆降低均价。`,
+      // 🔥 新增风险管理字段
+      newLiquidationPrice: newLiqPrice.toFixed(2),
+      stopLossPrice: newStopLoss.toFixed(2),
+      note: `利用 10x 杠杆降低均价。新均价 $${newAvgPrice.toFixed(2)}。`,
       description: `价格微弹至 $${recoveryTargetPrice.toFixed(2)} 即可达标。`,
       evaluation
     });
@@ -325,6 +378,12 @@ export async function generateStrategies(params: StrategyParams) {
   if (qtySpot > 0 && isFinite(qtySpot)) {
     const notionalVal = qtySpot * addPrice;
     const marginReq = notionalVal; // 1x (全额)
+    
+    // 🔥 现货混合均价和止损
+    const newTotalQtySpot = position.qty + qtySpot;
+    const newAvgPriceSpot = ((position.qty * position.avgPrice) + notionalVal) / newTotalQtySpot;
+    // 现货虽然不爆仓，但我们依然计算"如果跌到这里，总资产会大幅缩水"的止损点
+    const newStopLossSpot = calculateStopLossPrice(newAvgPriceSpot, position.direction, 0.05); // 现货给 5% 宽容度
     
     const evaluation = evaluateStrategySuitability(
       marginReq, currentMarginUsed, account, 'spot_buy', currentPrice
@@ -340,7 +399,10 @@ export async function generateStrategies(params: StrategyParams) {
       marginRequired: marginReq.toFixed(2),
       notionalValue: notionalVal.toFixed(2),
       leverageUsed: 1,
-      note: `无爆仓风险，双保险策略。`,
+      // 🔥 现货无强平，但有止损建议
+      newLiquidationPrice: "无 (现货)",
+      stopLossPrice: newStopLossSpot.toFixed(2),
+      note: `无爆仓风险，双保险策略。新均价 $${newAvgPriceSpot.toFixed(2)}。`,
       description: `需全额支付资金，适合长期看好。`,
       evaluation
     });
@@ -364,6 +426,9 @@ export async function generateStrategies(params: StrategyParams) {
       marginReq, currentMarginUsed, account, 'hedge', currentPrice
     );
 
+    // 🔥 对冲单的止损价
+    const hedgeStopLoss = calculateStopLossPrice(currentPrice, hedgeDir, 0.02); // 对冲单给 2% 宽容度
+    
     strategies.push({
       id: 3,
       title: `⚖️ 对冲策略 (10x)`,
@@ -375,6 +440,9 @@ export async function generateStrategies(params: StrategyParams) {
       notionalValue: notionalVal.toFixed(2),
       leverageUsed: leverage,
       targetPrice: hedgeTargetPrice.toFixed(2),
+      // 🔥 对冲策略的风险管理
+      newLiquidationPrice: "🔒 已锁仓 (Risk Locked)",
+      stopLossPrice: hedgeStopLoss.toFixed(2),
       note: `反向开单，利用波动赚取差价。`,
       evaluation
     });
@@ -397,19 +465,26 @@ export async function generateStrategies(params: StrategyParams) {
         marginMix, currentMarginUsed, account, 'mixed', currentPrice
       );
 
+      // 🔥 混合策略的强平价介于加仓和对冲之间
+      const mixNewAvgPrice = ((position.qty * position.avgPrice) + (mixAddQty * addPrice)) / (position.qty + mixAddQty);
+      const mixStopLoss = calculateStopLossPrice(mixNewAvgPrice, position.direction, 0.03); // 3% 宽容度
+      
       strategies.push({
         id: 4,
-        title: `🍹 混合策略 (Balanced)`,
+        title: `🍹 混合策略 (10x)`,
         type: 'mixed',
-        action: 'Combined',
-        quantity: 'N/A', // 组合操作
-        price: 'Market',
+        action: 'Mixed',
+        quantity: (mixAddQty + mixHedgeQty).toFixed(4),
+        price: currentPrice.toFixed(2),
         marginRequired: marginMix.toFixed(2),
         notionalValue: notionalMix.toFixed(2),
         leverageUsed: leverage,
-        note: `半仓补均价，半仓对冲，平衡风险。`,
+        // 🔥 混合策略的风险管理
+        newLiquidationPrice: "📊 动态 (Dynamic)",
+        stopLossPrice: mixStopLoss.toFixed(2),
+        note: `半仓加仓 + 半仓对冲，平衡风险。`,
         composition: [
-          { action: position.direction === 'long' ? 'Add Long' : 'Add Short', qty: mixAddQty.toFixed(4) },
+          { action: position.direction === 'long' ? 'Buy Long' : 'Sell Short', qty: mixAddQty.toFixed(4) },
           { action: hedgeDir === 'short' ? 'Open Short' : 'Open Long', qty: mixHedgeQty.toFixed(4) }
         ],
         evaluation: evaluationMix
@@ -491,8 +566,18 @@ export function formatStrategyOutput(result: any): string {
       }
     }
     
-    if (s.price !== 'Market') output += `- **执行价格**: $${s.price}\n`;
-    if (s.limitPrice) output += `- **挂单价格**: $${s.limitPrice}\n`;
+    if (s.targetPrice) {
+      output += `- **执行价格**: $${s.price}\n`;
+      output += `- **止盈目标**: **$${s.targetPrice}**\n`;
+    }
+    
+    // 新增：强平价与止损价展示
+    if (s.newLiquidationPrice) {
+      output += `- **新强平价**: **$${s.newLiquidationPrice}**\n`;
+    }
+    if (s.stopLossPrice) {
+      output += `- **建议止损**: **$${s.stopLossPrice}**\n`;
+    }
     if (s.description) output += `- **详情**: ${s.description}\n`;
     
     output += `\n---\n`;
