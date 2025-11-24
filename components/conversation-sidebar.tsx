@@ -1,0 +1,273 @@
+import type { ConversationMetadata } from '@/app/lib/types/conversation';
+import { Colors } from '@/constants/theme';
+import { useConversations } from '@/contexts/conversation-context';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import React from 'react';
+import {
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import { IconSymbol } from './ui/icon-symbol';
+
+// Helper function to format timestamp
+const formatDate = (timestamp: number) => {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
+
+interface ConversationSidebarProps {
+  onClose?: () => void;
+}
+
+export function ConversationSidebar({ onClose }: ConversationSidebarProps) {
+  const {
+    conversations,
+    currentConversation,
+    loadConversation,
+    startNewConversation,
+    deleteConversation,
+  } = useConversations();
+  
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+  const colors = isDark ? Colors.dark : Colors.light;
+
+  const handleSelectConversation = async (id: string) => {
+    try {
+      await loadConversation(id);
+      onClose?.();
+    } catch (error) {
+      console.error('Failed to load conversation:', error);
+    }
+  };
+
+  const handleNewChat = async () => {
+    try {
+      await startNewConversation();
+      onClose?.();
+    } catch (error) {
+      console.error('Failed to create new conversation:', error);
+    }
+  };
+
+  const handleDeleteConversation = (id: string, title: string) => {
+    Alert.alert(
+      'Delete Conversation',
+      `Are you sure you want to delete "${title}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteConversation(id);
+            } catch (error) {
+              console.error('Failed to delete conversation:', error);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const sortedConversations = [...conversations].sort(
+    (a, b) => b.updatedAt - a.updatedAt
+  );
+
+  return (
+    <View style={[styles.container, { backgroundColor: '#000000' }]}>
+      {/* Header */}
+      <View style={[styles.header, { borderBottomColor: '#333333' }]}>
+        <Text style={[styles.headerTitle, { color: '#ffffff' }]}>
+          Conversations
+        </Text>
+        <TouchableOpacity
+          onPress={handleNewChat}
+          style={[styles.newChatButton, { backgroundColor: colors.accent }]}
+          activeOpacity={0.8}
+        >
+          <IconSymbol name="plus" size={18} color="#fff" />
+          <Text style={styles.newChatButtonText}>New Chat</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Conversation List */}
+      <ScrollView style={styles.conversationList}>
+        {sortedConversations.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={[styles.emptyText, { color: '#888888' }]}>
+              No conversations yet
+            </Text>
+          </View>
+        ) : (
+          sortedConversations.map((conv) => (
+            <ConversationItem
+              key={conv.id}
+              conversation={conv}
+              isActive={currentConversation?.id === conv.id}
+              onSelect={() => handleSelectConversation(conv.id)}
+              onDelete={() => handleDeleteConversation(conv.id, conv.title)}
+            />
+          ))
+        )}
+      </ScrollView>
+    </View>
+  );
+}
+
+interface ConversationItemProps {
+  conversation: ConversationMetadata;
+  isActive: boolean;
+  onSelect: () => void;
+  onDelete: () => void;
+}
+
+function ConversationItem({
+  conversation,
+  isActive,
+  onSelect,
+  onDelete,
+}: ConversationItemProps) {
+  const [showDelete, setShowDelete] = React.useState(false);
+
+  return (
+    <TouchableOpacity
+      style={[
+        styles.conversationItem,
+        {
+          backgroundColor: isActive ? '#1a1a1a' : 'transparent',
+          borderLeftColor: isActive ? '#0ea5e9' : 'transparent',
+        },
+      ]}
+      onPress={onSelect}
+      onLongPress={() => setShowDelete(!showDelete)}
+      activeOpacity={0.7}
+    >
+      <View style={styles.conversationContent}>
+        <View style={styles.conversationHeader}>
+          <Text
+            style={[
+              styles.conversationTitle,
+              { color: '#ffffff' },
+              isActive && styles.activeTitle,
+            ]}
+            numberOfLines={1}
+          >
+            {conversation.title}
+          </Text>
+          {showDelete && (
+            <TouchableOpacity
+              onPress={onDelete}
+              style={styles.deleteButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <IconSymbol name="trash" size={16} color="#ff4444" />
+            </TouchableOpacity>
+          )}
+        </View>
+        <View style={styles.conversationMeta}>
+          <Text style={[styles.messageCount, { color: '#888888' }]}>
+            {conversation.messageCount} messages
+          </Text>
+          <Text style={[styles.timestamp, { color: '#888888' }]}>
+            {formatDate(conversation.updatedAt)}
+          </Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    width: 280,
+  },
+  header: {
+    padding: 16,
+    borderBottomWidth: 1,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  newChatButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    gap: 8,
+  },
+  newChatButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  conversationList: {
+    flex: 1,
+  },
+  emptyState: {
+    padding: 32,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  conversationItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderLeftWidth: 3,
+  },
+  conversationContent: {
+    flex: 1,
+  },
+  conversationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  conversationTitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    flex: 1,
+  },
+  activeTitle: {
+    fontWeight: '600',
+  },
+  deleteButton: {
+    padding: 4,
+    marginLeft: 8,
+  },
+  conversationMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  messageCount: {
+    fontSize: 12,
+  },
+  timestamp: {
+    fontSize: 12,
+  },
+});

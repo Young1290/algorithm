@@ -1,4 +1,4 @@
-import { LanguageSelector } from "@/components/language-selector";
+import { ConversationSidebar } from "@/components/conversation-sidebar";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Colors, getProseStyles } from "@/constants/theme";
 import { useConversations } from "@/contexts/conversation-context";
@@ -22,6 +22,7 @@ import Markdown from "react-native-markdown-display";
 
 export default function App() {
   const [input, setInput] = useState("");
+  const [sidebarVisible, setSidebarVisible] = useState(true);
   const { t, i18n } = useTranslation();
   const { startNewConversation } = useConversations();
   const colorScheme = useColorScheme();
@@ -52,32 +53,43 @@ export default function App() {
     <SafeAreaView
       style={[styles.safeArea, { backgroundColor: colors.backgroundSecondary }]}
     >
-      <View
-        style={[
-          styles.container,
-          { backgroundColor: colors.backgroundSecondary },
-        ]}
-      >
+      <View style={styles.mainLayout}>
+        {/* Sidebar */}
+        {sidebarVisible && (
+          <View style={[styles.sidebar, { borderRightColor: '#333333' }]}>
+            <ConversationSidebar onClose={() => setSidebarVisible(false)} />
+          </View>
+        )}
+
+        {/* Main Content */}
         <View
           style={[
-            styles.header,
-            {
-              backgroundColor: colors.background,
-              borderBottomColor: colors.border,
-            },
+            styles.container,
+            { backgroundColor: colors.backgroundSecondary },
           ]}
         >
-          <LanguageSelector />
-          <TouchableOpacity
-            onPress={startNewConversation}
-            style={[styles.newChatButton, { backgroundColor: colors.accent }]}
-            activeOpacity={0.8}
+          <View
+            style={[
+              styles.header,
+              {
+                backgroundColor: colors.background,
+                borderBottomColor: colors.border,
+              },
+            ]}
           >
-            <Text style={styles.newChatButtonText}>
-              {t("chat.newConversation", "New Chat")}
-            </Text>
-          </TouchableOpacity>
-        </View>
+            {/* Menu Button */}
+            <TouchableOpacity
+              onPress={() => setSidebarVisible(!sidebarVisible)}
+              style={styles.menuButton}
+              activeOpacity={0.7}
+            >
+              <IconSymbol
+                name={sidebarVisible ? "xmark" : "line.3.horizontal"}
+                size={20}
+                color="#000000"
+              />
+            </TouchableOpacity>
+          </View>
 
         <ScrollView
           style={styles.messagesContainer}
@@ -194,6 +206,7 @@ export default function App() {
           </TouchableOpacity>
         </View>
       </View>
+      </View>
     </SafeAreaView>
   );
 }
@@ -202,16 +215,28 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
+  mainLayout: {
+    flex: 1,
+    flexDirection: "row",
+  },
+  sidebar: {
+    borderRightWidth: 1,
+  },
   container: {
     flex: 1,
   },
   header: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
+  },
+  menuButton: {
+    padding: 8,
+    marginRight: 8,
+    color: "black",
   },
   newChatButton: {
     paddingHorizontal: 16,

@@ -32,7 +32,7 @@ export async function POST(req: Request) {
     .map((part: any) => part.text)
     .join(' ');
 
-  const containsTradingData = /(\$\d+k|\$\d+,\d+|bought|entry|position|profit|loss|BTC|bitcoin)/i.test(messageText);
+  const containsTradingData = /(\$\d+k|\$\d+,\d+|bought|entry|position|profit|loss|BTC|bitcoin|仓位|盈利|亏损|资金|买了|总资金)/i.test(messageText);
 
   console.log('🔍 Trading data detected:', containsTradingData);
   console.log('🔍 Tool choice:', containsTradingData ? 'required' : 'auto');
@@ -53,9 +53,10 @@ CRITICAL RULES - YOU MUST FOLLOW THESE:
 6. NEVER calculate manually - ALWAYS use the tools
 7. Don't say "let me calculate" - just call the tool directly
 8. ALL prices and amounts are in USD (United States Dollars) - Binance API returns USD prices
-9. When user mentions profit percentage (e.g., "20% profit"), calculate based on INVESTED CAPITAL, not total account balance
-   - Example: If user invested $800,000 and wants 20% profit → target is $160,000 (20% of $800,000)
-   - NOT $400,000 (which would be 20% of total $2,000,000 balance)
+9. 🔥 CRITICAL: When user mentions profit percentage (e.g., "20% profit"), use targetRoiPercent parameter based on INVESTED MARGIN (本金), NOT total balance or notional value
+   - ROI % is calculated on the MARGIN (保证金) invested, not the leveraged position size
+   - Example: 10x leverage position of $800,000 = $80,000 margin invested
+   - If user wants 20% ROI → use targetRoiPercent: 20 (which means 20% of $80,000 = $16,000 profit)
 
 EXAMPLE 1 - Fixed profit amount:
 User: "我在10万美元买了0.5个BTC，现在价格是9.5万，我想达到5000美元盈利，给我策略建议。账户余额2万美元，总权益3万美元。"
@@ -67,16 +68,17 @@ You MUST call planToAchieveProfitTarget with:
   "targetProfitUSD": 5000
 }
 
-EXAMPLE 2 - Percentage profit:
+EXAMPLE 2 - Percentage ROI (本金的百分比):
 User: "我总资金2,000,000，在90,000买了300,000仓位，92,000买了500,000仓位。我想盈利20%。"
-Calculate: Invested = 300,000 + 500,000 = 800,000, Target = 800,000 × 20% = 160,000
+Position: 300k + 500k = 800k notional, 10x leverage = 80k margin
 You MUST call planToAchieveProfitTarget with:
 {
   "symbol": "BTC",
   "position": {"direction": "long", "avgPrice": 91250, "qty": 8.77, "leverage": 10},
   "account": {"availableBalance": 1200000, "totalWalletBalance": 2000000},
-  "targetProfitUSD": 160000
+  "targetRoiPercent": 20
 }
+This will calculate: 80k margin × 20% = 16k profit target
 
 NEW FEATURES:
 - Strategy engine now includes risk assessment with labels (✅ 推荐, ⚠️ 资金紧张, 🚫 资金不足, ☠️ 爆仓预警)
@@ -100,9 +102,10 @@ Respond in English.`,
 6. 永远不要手动计算 - 始终使用工具
 7. 不要说"让我计算一下" - 直接调用工具
 8. 所有价格和金额都使用美元 (USD) - Binance API 返回的是美元价格
-9. 当用户提到盈利百分比（如"盈利20%"）时，基于已投入资金计算，而非账户总余额
-   - 示例：用户投入了 $800,000，想要盈利20% → 目标是 $160,000（$800,000 的 20%）
-   - 而不是 $400,000（总余额 $2,000,000 的 20%）
+9. 🔥 关键：当用户提到盈利百分比（如"盈利20%"）时，使用 targetRoiPercent 参数，基于已投入本金（Margin），而非总余额或仓位名义价值
+   - ROI % 是基于投入的保证金（Margin）计算，而不是杠杆后的仓位大小
+   - 示例：10x 杠杆仓位 $800,000 = 投入本金 $80,000
+   - 如果用户想要 20% ROI → 使用 targetRoiPercent: 20（即 $80,000 的 20% = $16,000 盈利）
 
 示例1 - 固定盈利金额：
 用户："我在10万美元买了0.5个BTC，现在价格是9.5万，我想达到5000美元盈利，给我策略建议。账户余额2万美元，总权益3万美元。"
@@ -114,16 +117,17 @@ Respond in English.`,
   "targetProfitUSD": 5000
 }
 
-示例2 - 百分比盈利：
+示例2 - 百分比 ROI（本金的百分比）：
 用户："我总资金2,000,000，在90,000买了300,000仓位，92,000买了500,000仓位。我想盈利20%。"
-计算：已投入 = 300,000 + 500,000 = 800,000，目标 = 800,000 × 20% = 160,000
+仓位：300k + 500k = 800k 名义价值，10x 杠杆 = 80k 本金
 你必须调用 planToAchieveProfitTarget：
 {
   "symbol": "BTC",
   "position": {"direction": "long", "avgPrice": 91250, "qty": 8.77, "leverage": 10},
   "account": {"availableBalance": 1200000, "totalWalletBalance": 2000000},
-  "targetProfitUSD": 160000
+  "targetRoiPercent": 20
 }
+这将计算：80k 本金 × 20% = 16k 盈利目标
 
 新功能：
 - 策略引擎现在包含风险评估标签 (✅ 推荐, ⚠️ 资金紧张, 🚫 资金不足, ☠️ 爆仓预警)
@@ -305,7 +309,7 @@ Respond in English.`,
 
       // New Tool: Plan to Achieve Profit Target
       planToAchieveProfitTarget: tool({
-        description: 'Generate dynamic trading strategies to achieve profit target with risk assessment. Automatically fetches current price if not provided. Evaluates account balance and liquidation risks.',
+        description: 'Generate dynamic trading strategies to achieve profit target with risk assessment. Automatically fetches current price if not provided. Evaluates account balance and liquidation risks. IMPORTANT: Use targetRoiPercent for percentage-based profit (e.g., 20% of invested margin), or targetProfitUSD for fixed amount.',
         inputSchema: z.object({
           symbol: z.enum(['BTC', 'ETH', 'SOL', 'BNB']).default('BTC').describe('Trading pair symbol'),
           currentPrice: z.number().positive().optional().describe('Current market price. If not provided, will auto-fetch from Binance'),
@@ -321,7 +325,8 @@ Respond in English.`,
             availableBalance: z.number().nonnegative().describe('Available USDT balance'),
             totalWalletBalance: z.number().nonnegative().describe('Total wallet balance in USDT')
           }).optional().describe('Account balance info for risk assessment. If not provided, will skip fund sufficiency checks'),
-          targetProfitUSD: z.number().nonnegative().describe('Target profit amount in USD'),
+          targetRoiPercent: z.number().positive().optional().describe('🔥 Target ROI as percentage of invested MARGIN (e.g., 20 for 20% ROI). Takes priority over targetProfitUSD.'),
+          targetProfitUSD: z.number().nonnegative().optional().describe('Target profit amount in USD (fixed amount). Use targetRoiPercent instead for percentage-based targets.'),
           conservativeMode: z.boolean().default(true).describe('Enable conservative mode (waits for better entry price if true)')
         }),
         execute: async (params) => {
@@ -352,7 +357,8 @@ Respond in English.`,
               currentPrice: marketPrice,
               position: params.position,
               account: params.account, // Pass account info for risk assessment
-              targetProfitUSD: params.targetProfitUSD,
+              targetRoiPercent: params.targetRoiPercent, // 🔥 ROI percentage (priority)
+              targetProfitUSD: params.targetProfitUSD,   // Fixed amount (fallback)
               conservativeMode: params.conservativeMode
             });
 
