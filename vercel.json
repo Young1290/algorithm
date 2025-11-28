@@ -6,16 +6,16 @@
       "destination": "/api/$1"
     },
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
-  ],
-  "headers": [
+      "source": "/assets/(.*)",
+      "destination": "/client/assets/$1"
+    },
+    {
+      "source": "/_expo/(.*)",
+      "destination": "/client/_expo/$1"
+    },
     {
       "source": "/(.*)",
-      "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "*" }
-      ]
+      "destination": "/client/index.html"
     }
   ]
 }
