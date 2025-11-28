@@ -21,7 +21,8 @@ import {
 
 // Vercel Edge Runtime configuration
 export const config = {
-  runtime: 'edge',
+  runtime: 'nodejs', // ✅ 更稳定，兼容性更好
+  maxDuration: 60,   // 申请 60秒 超时时间 (防止 8s 执行时间太接近极限)
 };
 
 // Initialize DeepSeek with API key
