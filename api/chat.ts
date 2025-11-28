@@ -182,10 +182,24 @@ Respond in English.`,
 
   const systemPrompt = systemPrompts[language as keyof typeof systemPrompts] || systemPrompts.en;
 
+  // ✅ 转换简单格式消息为 UIMessage 格式
+  const uiMessages: UIMessage[] = messages.map((msg, index) => {
+    if ('content' in msg && typeof msg.content === 'string') {
+      // 简单格式：转换为 UIMessage
+      return {
+        id: `msg-${index}`,
+        role: msg.role as 'user' | 'assistant',
+        parts: [{ type: 'text' as const, text: msg.content }]
+      } as UIMessage;
+    }
+    // 已经是 UIMessage 格式
+    return msg as UIMessage;
+  });
+
   const result = streamText({
     model: deepseek('deepseek-chat'),
     system: systemPrompt,
-    messages: convertToModelMessages(messages),
+    messages: convertToModelMessages(uiMessages),
     stopWhen: stepCountIs(10),
     tools: {
       analyzeTradePosition: tool({
