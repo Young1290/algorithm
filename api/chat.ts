@@ -44,14 +44,28 @@ export default async function handler(request: Request) {
   }
 
   try {
-    const { messages, language = 'zh' }: { messages: UIMessage[]; language?: string } = await request.json();
+    // ✅ 使用更灵活的类型定义，兼容前端发送的简单格式
+    const { messages, language = 'zh' }: { 
+      messages: Array<{ role: string; content: string } | UIMessage>; 
+      language?: string 
+    } = await request.json();
 
     // Check if the last message contains trading-related keywords
     const lastMessage = messages[messages.length - 1];
-    const messageText = lastMessage.parts
-      .filter((part: any) => part.type === 'text')
-      .map((part: any) => part.text)
-      .join(' ');
+    
+    // ✅ 修复：兼容纯文本 content 和 复杂 parts 两种格式
+    let messageText = '';
+    
+    if ('content' in lastMessage && typeof lastMessage.content === 'string') {
+        // 情况 1: 前端发送的是纯文本 (我们现在的做法)
+        messageText = lastMessage.content;
+    } else if ('parts' in lastMessage && Array.isArray(lastMessage.parts)) {
+        // 情况 2: 前端发送的是复杂结构 (SDK 默认做法)
+        messageText = lastMessage.parts
+        .filter((part: any) => part.type === 'text')
+        .map((part: any) => part.text)
+        .join(' ');
+    }
 
     // Enhanced trading data detection - includes more number formats
     const containsTradingData = /(\$\d+k|\$\d+,\d+|\d+,\d+|bought|entry|position|profit|loss|BTC|bitcoin|仓位|盈利|亏损|资金|买了|总资金|本金|杠杆|leverage|ROI|收益|目标)/i.test(messageText);
