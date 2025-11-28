@@ -23,8 +23,9 @@
       "package": "com.young0825.chatbitcoin"
     },
     "web": {
-      "output": "server",
-      "favicon": "./assets/images/favicon.png"
+      "output": "static",
+      "favicon": "./assets/images/favicon.png",
+      "bundler": "metro"
     },
     "plugins": [
       "expo-router",
