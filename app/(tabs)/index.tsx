@@ -7,7 +7,7 @@ import { usePersistedChat } from "@/hooks/use-persisted-chat";
 import { generateAPIUrl } from "@/utils";
 import { DefaultChatTransport } from "ai";
 import { fetch as expoFetch } from "expo/fetch";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   SafeAreaView,
@@ -21,6 +21,8 @@ import {
 import Markdown from "react-native-markdown-display";
 
 export default function App() {
+  // 1. 添加客户端渲染保护
+  const [isMounted, setIsMounted] = useState(false);
   const [input, setInput] = useState("");
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const { t, i18n } = useTranslation();
@@ -39,8 +41,18 @@ export default function App() {
           language: i18n.language,
         },
       }),
-      onError: (error) => console.error(error, "ERROR"),
+      onError: (error: Error) => console.error(error, "ERROR"),
     });
+
+  // 2. 使用 useEffect 标记组件已挂载
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // 3. 如果还没挂载（还在服务端渲染阶段），返回空，防止水合错误
+  if (!isMounted) {
+    return <View style={{ flex: 1, backgroundColor: colors.background }} />;
+  }
 
   if (error)
     return (
