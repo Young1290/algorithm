@@ -1,39 +1,59 @@
 import { createDeepSeek } from '@ai-sdk/deepseek';
 import {
-  convertToModelMessages,
-  stepCountIs,
-  streamText, tool, UIMessage,
+    convertToModelMessages,
+    stepCountIs,
+    streamText,
+    tool,
+    UIMessage,
 } from 'ai';
 import { z } from 'zod';
 import {
-  analyzePositionWithSummary,
-  calculateCapitalAdjustmentsWithSummary,
-  calculateTargetPricesWithSummary
-} from '../lib/bitcoin-trading';
+    analyzePositionWithSummary,
+    calculateCapitalAdjustmentsWithSummary,
+    calculateTargetPricesWithSummary
+} from '../app/lib/bitcoin-trading';
 import {
-  fetchBinance24hStats,
-  fetchBinancePrice,
-  formatStrategyOutput,
-  generateStrategies
-} from '../lib/strategy-engine';
+    fetchBinance24hStats,
+    fetchBinancePrice,
+    formatStrategyOutput,
+    generateStrategies
+} from '../app/lib/strategy-engine';
+
+// Vercel Edge Runtime configuration
+export const config = {
+  runtime: 'edge',
+};
 
 // Initialize DeepSeek with API key
 const deepseek = createDeepSeek({
   apiKey: process.env.DEEPSEEK_API_KEY || '',
 });
 
-export async function POST(req: Request) {
-  const { messages, language = 'zh' }: { messages: UIMessage[]; language?: string } = await req.json();
+// Vercel 原生函数 (默认导出)
+export default async function handler(request: Request) {
+  // 处理 CORS
+  if (request.method === 'OPTIONS') {
+    return new Response('ok', { 
+      headers: { 'Access-Control-Allow-Origin': '*' } 
+    });
+  }
 
-  // Check if the last message contains trading-related keywords
-  const lastMessage = messages[messages.length - 1];
-  const messageText = lastMessage.parts
-    .filter((part: any) => part.type === 'text')
-    .map((part: any) => part.text)
-    .join(' ');
+  if (request.method !== 'POST') {
+    return new Response('Method Not Allowed', { status: 405 });
+  }
 
-  // Enhanced trading data detection - includes more number formats
-  const containsTradingData = /(\$\d+k|\$\d+,\d+|\d+,\d+|bought|entry|position|profit|loss|BTC|bitcoin|仓位|盈利|亏损|资金|买了|总资金|本金|杠杆|leverage|ROI|收益|目标)/i.test(messageText);
+  try {
+    const { messages, language = 'zh' }: { messages: UIMessage[]; language?: string } = await request.json();
+
+    // Check if the last message contains trading-related keywords
+    const lastMessage = messages[messages.length - 1];
+    const messageText = lastMessage.parts
+      .filter((part: any) => part.type === 'text')
+      .map((part: any) => part.text)
+      .join(' ');
+
+    // Enhanced trading data detection - includes more number formats
+    const containsTradingData = /(\$\d+k|\$\d+,\d+|\d+,\d+|bought|entry|position|profit|loss|BTC|bitcoin|仓位|盈利|亏损|资金|买了|总资金|本金|杠杆|leverage|ROI|收益|目标)/i.test(messageText);
 
   console.log('🔍 Message text:', messageText);
   console.log('🔍 Language:', language);
@@ -390,10 +410,12 @@ Respond in English.`,
     },
   });
 
-  return result.toUIMessageStreamResponse({
-    headers: {
-      'Content-Type': 'application/octet-stream',
-      'Content-Encoding': 'none',
-    },
-  });
+    return result.toTextStreamResponse();
+
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }), { 
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
 }
