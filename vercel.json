@@ -10,12 +10,16 @@
       "destination": "/client/assets/$1"
     },
     {
-      "source": "/_expo/(.*)",
-      "destination": "/client/_expo/$1"
+      "source": "/_expo/static/(.*)",
+      "destination": "/client/_expo/static/$1"
+    },
+    {
+      "source": "/favicon.ico",
+      "destination": "/client/favicon.ico"
     },
     {
       "source": "/(.*)",
-      "destination": "/client/index.html"
+      "destination": "/server/(tabs)/index.html"
     }
   ]
 }
