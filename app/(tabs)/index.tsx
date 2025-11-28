@@ -80,14 +80,12 @@ export default function App() {
             {/* Menu Button */}
             <TouchableOpacity
               onPress={() => setSidebarVisible(!sidebarVisible)}
-              style={styles.menuButton}
+              style={[styles.menuButton, { backgroundColor: colors.accent }]}
               activeOpacity={0.7}
             >
-              <IconSymbol
-                name={sidebarVisible ? "xmark" : "line.3.horizontal"}
-                size={20}
-                color="#000000"
-              />
+              <Text style={styles.menuButtonText}>
+                {sidebarVisible ? "✕" : "☰"}
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -236,7 +234,16 @@ const styles = StyleSheet.create({
   menuButton: {
     padding: 8,
     marginRight: 8,
-    color: "black",
+    borderRadius: 8,
+    minWidth: 40,
+    minHeight: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuButtonText: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: 'white',
   },
   newChatButton: {
     paddingHorizontal: 16,

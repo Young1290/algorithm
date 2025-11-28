@@ -3,23 +3,19 @@
  * Automatically saves messages to local storage as they're received
  */
 
-import { useEffect, useCallback } from 'react';
 import { useChat as useAIChat } from '@ai-sdk/react';
-import type { UseChatOptions, UIMessage } from 'ai';
+import { useEffect } from 'react';
 import { useConversations } from '../contexts/conversation-context';
 
 /**
  * Extended useChat hook with automatic persistence
  * Syncs messages between AI SDK and local storage
  */
-export function usePersistedChat(options?: Omit<UseChatOptions, 'initialMessages'>) {
+export function usePersistedChat(options?: any) {
   const { currentConversation, updateMessages, loading: conversationLoading } = useConversations();
 
-  // Initialize useChat with messages from current conversation
-  const chat = useAIChat({
-    ...options,
-    initialMessages: currentConversation?.messages || [],
-  });
+  // Initialize useChat without initial messages (will be set via setMessages)
+  const chat = useAIChat(options);
 
   const { messages } = chat;
 

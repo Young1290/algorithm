@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "bc",
-    "slug": "bc",
+    "slug": "chatbitcoin",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -19,7 +19,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.young0825.chatbitcoin"
     },
     "web": {
       "output": "server",
@@ -43,6 +44,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "5b5bd2ab-e6d2-4858-bdd2-42f996a2006d"
+      }
+    },
+    "owner": "young0825"
   }
 }

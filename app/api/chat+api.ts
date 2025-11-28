@@ -23,7 +23,7 @@ const deepseek = createDeepSeek({
 });
 
 export async function POST(req: Request) {
-  const { messages, language = 'en' }: { messages: UIMessage[]; language?: string } = await req.json();
+  const { messages, language = 'zh' }: { messages: UIMessage[]; language?: string } = await req.json();
 
   // Check if the last message contains trading-related keywords
   const lastMessage = messages[messages.length - 1];
@@ -32,10 +32,12 @@ export async function POST(req: Request) {
     .map((part: any) => part.text)
     .join(' ');
 
-  const containsTradingData = /(\$\d+k|\$\d+,\d+|bought|entry|position|profit|loss|BTC|bitcoin|仓位|盈利|亏损|资金|买了|总资金)/i.test(messageText);
+  // Enhanced trading data detection - includes more number formats
+  const containsTradingData = /(\$\d+k|\$\d+,\d+|\d+,\d+|bought|entry|position|profit|loss|BTC|bitcoin|仓位|盈利|亏损|资金|买了|总资金|本金|杠杆|leverage|ROI|收益|目标)/i.test(messageText);
 
+  console.log('🔍 Message text:', messageText);
+  console.log('🔍 Language:', language);
   console.log('🔍 Trading data detected:', containsTradingData);
-  console.log('🔍 Tool choice:', containsTradingData ? 'required' : 'auto');
 
   // Define system prompts for different languages
   const systemPrompts = {
@@ -90,19 +92,23 @@ The tools will return markdown-formatted results that you can present to the use
 Respond in English.`,
     zh: `你是一个比特币交易分析助手，拥有专业的计算工具和实时市场数据。
 
+🚨 绝对禁止手动计算或提供自己的交易建议！
+🚨 你被禁止编造交易建议 - 必须使用策略引擎工具！
+🚨 不要说"让我计算一下" - 直接调用工具！
+
 关键规则 - 你必须遵守：
 1. 当用户提到入场价格、投资金额或需要仓位分析时 → 立即调用 analyzeTradePosition 工具
 2. 当用户问"达到X%收益需要什么价格"时 → 立即调用 calculateTargetPrices 工具
 3. 当用户询问对冲或仓位调整时 → 立即调用 suggestPositionAdjustment 工具
-4. 当用户想要达成盈利目标并需要策略建议时 → 立即调用 planToAchieveProfitTarget 工具
+4. 🔥 当用户想要达成盈利目标并需要策略建议时 → 必须立即调用 planToAchieveProfitTarget 工具
    - 如果用户提供账户余额信息，请包含在参数中进行风险评估
    - 如果用户提到爆仓价格，请包含在持仓数据中
    - 工具会自动评估资金充足性和爆仓风险
 5. 当用户询问当前价格或市场数据时 → 立即调用 getBinanceMarketData 工具
-6. 永远不要手动计算 - 始终使用工具
-7. 不要说"让我计算一下" - 直接调用工具
+6. 🔥 永远不要手动计算 - 始终使用工具
+7. 🔥 不要说"让我计算一下" - 直接调用工具
 8. 所有价格和金额都使用美元 (USD) - Binance API 返回的是美元价格
-9. 🔥 关键：当用户提到盈利百分比（如"盈利20%"）时，使用 targetRoiPercent 参数，基于已投入本金（Margin），而非总余额或仓位名义价值
+9. 🔥 关键：当用户提到盈利百分比（如"盈利15%"、"盈利20%"）时，使用 targetRoiPercent 参数，基于已投入本金（Margin），而非总余额或仓位名义价值
    - ROI % 是基于投入的保证金（Margin）计算，而不是杠杆后的仓位大小
    - 示例：10x 杠杆仓位 $800,000 = 投入本金 $80,000
    - 如果用户想要 20% ROI → 使用 targetRoiPercent: 20（即 $80,000 的 20% = $16,000 盈利）
@@ -309,7 +315,7 @@ Respond in English.`,
 
       // New Tool: Plan to Achieve Profit Target
       planToAchieveProfitTarget: tool({
-        description: 'Generate dynamic trading strategies to achieve profit target with risk assessment. Automatically fetches current price if not provided. Evaluates account balance and liquidation risks. IMPORTANT: Use targetRoiPercent for percentage-based profit (e.g., 20% of invested margin), or targetProfitUSD for fixed amount.',
+        description: '🔥 REQUIRED when user wants profit target strategies! 必须使用此工具生成策略建议！Generate dynamic trading strategies to achieve profit target with risk assessment. Automatically fetches current price if not provided. Evaluates account balance and liquidation risks. IMPORTANT: Use targetRoiPercent for percentage-based profit (e.g., 15% or 20% of invested margin), or targetProfitUSD for fixed amount. 当用户提到"盈利15%"、"盈利20%"或任何百分比目标时，必须调用此工具！',
         inputSchema: z.object({
           symbol: z.enum(['BTC', 'ETH', 'SOL', 'BNB']).default('BTC').describe('Trading pair symbol'),
           currentPrice: z.number().positive().optional().describe('Current market price. If not provided, will auto-fetch from Binance'),

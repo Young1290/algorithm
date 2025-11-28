@@ -4,12 +4,11 @@ import { useConversations } from '@/contexts/conversation-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import React from 'react';
 import {
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { IconSymbol } from './ui/icon-symbol';
 
@@ -66,24 +65,29 @@ export function ConversationSidebar({ onClose }: ConversationSidebarProps) {
   };
 
   const handleDeleteConversation = (id: string, title: string) => {
-    Alert.alert(
-      'Delete Conversation',
-      `Are you sure you want to delete "${title}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteConversation(id);
-            } catch (error) {
-              console.error('Failed to delete conversation:', error);
-            }
-          },
-        },
-      ]
-    );
+    console.log('🗑️ handleDeleteConversation called');
+    console.log('  - ID:', id);
+    console.log('  - Title:', title);
+    
+    // 在 Web 环境下使用 window.confirm
+    const confirmed = window.confirm(`确定要删除 "${title}" 吗？`);
+    console.log('🤔 用户选择:', confirmed ? '确认删除' : '取消');
+    
+    if (confirmed) {
+      console.log('✅ 用户确认删除');
+      (async () => {
+        try {
+          console.log('🔄 开始删除对话...');
+          await deleteConversation(id);
+          console.log('✅ 删除成功');
+        } catch (error) {
+          console.error('❌ 删除失败:', error);
+          window.alert('删除对话失败，请重试');
+        }
+      })();
+    } else {
+      console.log('❌ 用户取消删除');
+    }
   };
 
   const sortedConversations = [...conversations].sort(
@@ -144,10 +148,8 @@ function ConversationItem({
   onSelect,
   onDelete,
 }: ConversationItemProps) {
-  const [showDelete, setShowDelete] = React.useState(false);
-
   return (
-    <TouchableOpacity
+    <View
       style={[
         styles.conversationItem,
         {
@@ -155,11 +157,15 @@ function ConversationItem({
           borderLeftColor: isActive ? '#0ea5e9' : 'transparent',
         },
       ]}
-      onPress={onSelect}
-      onLongPress={() => setShowDelete(!showDelete)}
-      activeOpacity={0.7}
     >
-      <View style={styles.conversationContent}>
+      <TouchableOpacity
+        style={styles.conversationContent}
+        onPress={() => {
+          console.log('📱 对话被点击:', conversation.title);
+          onSelect();
+        }}
+        activeOpacity={0.7}
+      >
         <View style={styles.conversationHeader}>
           <Text
             style={[
@@ -171,15 +177,6 @@ function ConversationItem({
           >
             {conversation.title}
           </Text>
-          {showDelete && (
-            <TouchableOpacity
-              onPress={onDelete}
-              style={styles.deleteButton}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <IconSymbol name="trash" size={16} color="#ff4444" />
-            </TouchableOpacity>
-          )}
         </View>
         <View style={styles.conversationMeta}>
           <Text style={[styles.messageCount, { color: '#888888' }]}>
@@ -189,8 +186,24 @@ function ConversationItem({
             {formatDate(conversation.updatedAt)}
           </Text>
         </View>
+      </TouchableOpacity>
+      
+      {/* Delete Button - 独立的绝对定位 */}
+      <View style={styles.deleteButtonContainer}>
+        <TouchableOpacity
+          onPress={() => {
+            console.log('🖱️ 删除按钮被点击');
+            console.log('  - Conversation ID:', conversation.id);
+            console.log('  - Conversation Title:', conversation.title);
+            onDelete();
+          }}
+          style={styles.deleteButton}
+          activeOpacity={0.6}
+        >
+          <Text style={styles.deleteButtonText}>✕</Text>
+        </TouchableOpacity>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 }
 
@@ -198,6 +211,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     width: 280,
+    overflow: 'visible',
   },
   header: {
     padding: 16,
@@ -224,6 +238,7 @@ const styles = StyleSheet.create({
   },
   conversationList: {
     flex: 1,
+    overflow: 'visible',
   },
   emptyState: {
     padding: 32,
@@ -237,9 +252,19 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderLeftWidth: 3,
+    position: 'relative',
+    overflow: 'visible',
   },
   conversationContent: {
-    flex: 1,
+    paddingRight: 40,
+  },
+  deleteButtonContainer: {
+    position: 'absolute',
+    right: 16,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    zIndex: 10,
   },
   conversationHeader: {
     flexDirection: 'row',
@@ -256,8 +281,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   deleteButton: {
-    padding: 4,
-    marginLeft: 8,
+    padding: 8,
+    minWidth: 32,
+    minHeight: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 68, 68, 0.1)',
+    borderRadius: 4,
+  },
+  deleteButtonText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#ff4444',
   },
   conversationMeta: {
     flexDirection: 'row',
