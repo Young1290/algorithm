@@ -1,9 +1,10 @@
 /**
  * React Context for managing conversation state
  * Provides conversation CRUD operations and state to all components
+ * Uses Firestore for cloud storage when authenticated
  */
 
-import * as ConversationStorage from "@/app/lib/storage/conversation-storage";
+import * as ConversationStorage from "@/app/lib/storage/firestore-storage";
 import type {
     Conversation,
     ConversationMetadata,
@@ -17,6 +18,7 @@ import React, {
     useEffect,
     useState,
 } from "react";
+import { useAuth } from "./auth-context";
 
 interface ConversationContextValue {
   /** Currently active conversation */
@@ -62,6 +64,7 @@ interface ConversationProviderProps {
 }
 
 export function ConversationProvider({ children }: ConversationProviderProps) {
+  const { user } = useAuth();
   const [currentConversation, setCurrentConversation] =
     useState<Conversation | null>(null);
   const [conversations, setConversations] = useState<ConversationMetadata[]>(
@@ -73,18 +76,28 @@ export function ConversationProvider({ children }: ConversationProviderProps) {
    * Load all conversations metadata
    */
   const loadConversationsMetadata = useCallback(async () => {
+    if (!user) return;
     try {
       const metadata = await ConversationStorage.getConversationsMetadata();
       setConversations(metadata);
     } catch (error) {
       console.error("Failed to load conversations metadata:", error);
     }
-  }, []);
+  }, [user]);
 
   /**
    * Initialize: Load active conversation or create a new one
+   * Only runs when user is authenticated
    */
   useEffect(() => {
+    // Reset state when user logs out
+    if (!user) {
+      setConversations([]);
+      setCurrentConversation(null);
+      setLoading(false);
+      return;
+    }
+
     async function initialize() {
       try {
         setLoading(true);
@@ -117,7 +130,7 @@ export function ConversationProvider({ children }: ConversationProviderProps) {
     }
 
     initialize();
-  }, [loadConversationsMetadata]);
+  }, [user, loadConversationsMetadata]);
 
   /**
    * Create a new conversation

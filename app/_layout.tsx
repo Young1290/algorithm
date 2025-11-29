@@ -1,28 +1,65 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
 import 'react-native-reanimated';
 import '@/i18n';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { ConversationProvider } from '@/contexts/conversation-context';
+import { AuthProvider, useAuth } from '@/contexts/auth-context';
 
 export const unstable_settings = {
   anchor: '(tabs)',
 };
 
-export default function RootLayout() {
+/**
+ * Navigation component with auth guard
+ * Redirects to login if not authenticated
+ */
+function RootLayoutNav() {
+  const { user, loading } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
   const colorScheme = useColorScheme();
+
+  useEffect(() => {
+    if (loading) return;
+
+    const inAuthGroup = (segments[0] as string) === '(auth)';
+
+    if (!user && !inAuthGroup) {
+      // User is not signed in and not on auth screen, redirect to login
+      router.replace('/(auth)/login' as any);
+    } else if (user && inAuthGroup) {
+      // User is signed in but on auth screen, redirect to main app
+      router.replace('/(tabs)' as any);
+    }
+  }, [user, loading, segments]);
+
+  // Show nothing while determining auth state
+  if (loading) {
+    return null;
+  }
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <ConversationProvider>
         <Stack>
+          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
         </Stack>
         <StatusBar style="auto" />
       </ConversationProvider>
     </ThemeProvider>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <AuthProvider>
+      <RootLayoutNav />
+    </AuthProvider>
   );
 }

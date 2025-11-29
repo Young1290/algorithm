@@ -1,5 +1,6 @@
 import type { ConversationMetadata } from '@/app/lib/types/conversation';
 import { Colors } from '@/constants/theme';
+import { useAuth } from '@/contexts/auth-context';
 import { useConversations } from '@/contexts/conversation-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import React from 'react';
@@ -41,10 +42,32 @@ export function ConversationSidebar({ onClose }: ConversationSidebarProps) {
     startNewConversation,
     deleteConversation,
   } = useConversations();
-  
+  const { user, signOut } = useAuth();
+
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const colors = isDark ? Colors.dark : Colors.light;
+
+  const handleSignOut = () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await signOut();
+            } catch (error) {
+              console.error('Failed to sign out:', error);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const handleSelectConversation = async (id: string) => {
     try {
@@ -131,6 +154,23 @@ export function ConversationSidebar({ onClose }: ConversationSidebarProps) {
           ))
         )}
       </ScrollView>
+
+      {/* User Section */}
+      {user && (
+        <View style={[styles.userSection, { borderTopColor: '#333333' }]}>
+          <Text style={styles.userEmail} numberOfLines={1}>
+            {user.email}
+          </Text>
+          <TouchableOpacity
+            onPress={handleSignOut}
+            style={styles.signOutButton}
+            activeOpacity={0.7}
+          >
+            <IconSymbol name="rectangle.portrait.and.arrow.right" size={16} color="#ff4444" />
+            <Text style={styles.signOutText}>Sign Out</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
@@ -304,5 +344,24 @@ const styles = StyleSheet.create({
   },
   timestamp: {
     fontSize: 12,
+  },
+  userSection: {
+    padding: 16,
+    borderTopWidth: 1,
+    gap: 12,
+  },
+  userEmail: {
+    fontSize: 13,
+    color: '#888888',
+  },
+  signOutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  signOutText: {
+    fontSize: 14,
+    color: '#ff4444',
+    fontWeight: '500',
   },
 });
