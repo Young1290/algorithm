@@ -6,17 +6,17 @@
 
 import * as ConversationStorage from "@/app/lib/storage/firestore-storage";
 import type {
-  Conversation,
-  ConversationMetadata,
-  CreateConversationOptions,
+    Conversation,
+    ConversationMetadata,
+    CreateConversationOptions,
 } from "@/app/lib/types/conversation";
 import type { UIMessage } from "ai";
 import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useState,
 } from "react";
 import { useAuth } from "./auth-context";
 
@@ -244,20 +244,29 @@ export function ConversationProvider({ children }: ConversationProviderProps) {
    */
   const deleteConversation = useCallback(
     async (id: string) => {
+      console.log('🗑️ [Context] deleteConversation called with ID:', id);
+      console.log('  - Current conversation ID:', currentConversation?.id);
+      
       try {
+        console.log('🔄 [Context] Calling ConversationStorage.deleteConversation...');
         await ConversationStorage.deleteConversation(id);
+        console.log('✅ [Context] Storage deletion successful');
 
         // If we deleted the current conversation, start a new one
         if (currentConversation?.id === id) {
+          console.log('📝 [Context] Deleted current conversation, creating new one...');
           const newConversation =
             await ConversationStorage.createConversation();
           await ConversationStorage.setActiveConversationId(newConversation.id);
           setCurrentConversation(newConversation);
+          console.log('✅ [Context] New conversation created:', newConversation.id);
         }
 
+        console.log('🔄 [Context] Reloading conversations metadata...');
         await loadConversationsMetadata();
+        console.log('✅ [Context] Delete operation completed successfully');
       } catch (error) {
-        console.error(`Failed to delete conversation ${id}:`, error);
+        console.error(`❌ [Context] Failed to delete conversation ${id}:`, error);
         throw error;
       }
     },

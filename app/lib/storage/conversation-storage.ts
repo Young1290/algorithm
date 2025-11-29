@@ -34,7 +34,7 @@ function generateTitle(messages: Conversation['messages'], fallback = 'New Conve
 
   // Extract text from message parts
   const textParts = firstUserMessage.parts
-    .filter((part) => part.type === 'text' && part.text)
+    .filter((part): part is Extract<typeof part, { type: 'text' }> => part.type === 'text')
     .map((part) => part.text)
     .join(' ');
 
@@ -162,26 +162,40 @@ export async function updateConversation(
  * Delete a conversation
  */
 export async function deleteConversation(id: string): Promise<boolean> {
+  console.log('🗑️ [Storage] deleteConversation called with ID:', id);
+  
   try {
+    console.log('📂 [Storage] Loading all conversations...');
     const conversations = await loadConversations();
+    console.log('📊 [Storage] Total conversations before delete:', conversations.length);
+    console.log('📋 [Storage] Conversation IDs:', conversations.map(c => c.id));
+    
     const filtered = conversations.filter((c) => c.id !== id);
+    console.log('📊 [Storage] Total conversations after filter:', filtered.length);
 
     if (filtered.length === conversations.length) {
-      console.warn(`Conversation ${id} not found`);
+      console.warn(`⚠️ [Storage] Conversation ${id} not found`);
       return false;
     }
 
+    console.log('💾 [Storage] Saving filtered conversations...');
     await saveConversations(filtered);
+    console.log('✅ [Storage] Conversations saved successfully');
 
     // Clear active conversation if it was deleted
     const activeId = await getActiveConversationId();
+    console.log('🔍 [Storage] Active conversation ID:', activeId);
+    
     if (activeId === id) {
+      console.log('🧹 [Storage] Clearing active conversation ID...');
       await clearActiveConversationId();
+      console.log('✅ [Storage] Active conversation cleared');
     }
 
+    console.log('✅ [Storage] Delete operation completed successfully');
     return true;
   } catch (error) {
-    console.error(`Failed to delete conversation ${id}:`, error);
+    console.error(`❌ [Storage] Failed to delete conversation ${id}:`, error);
     throw error;
   }
 }

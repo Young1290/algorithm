@@ -8,6 +8,13 @@
       ]
     }
   },
+  "ts-node": {
+    "compilerOptions": {
+      "module": "CommonJS",
+      "moduleResolution": "Node",
+      "esModuleInterop": true
+    }
+  },
   "include": [
     "**/*.ts",
     "**/*.tsx",

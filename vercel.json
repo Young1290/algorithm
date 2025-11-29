@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "rewrites": [
+    {
+      "source": "/assets/(.*)",
+      "destination": "/client/assets/$1"
+    },
+    {
+      "source": "/_expo/(.*)",
+      "destination": "/client/_expo/$1"
+    },
+    {
+      "source": "/favicon.ico",
+      "destination": "/client/favicon.ico"
+    },
+    {
+
+      "source": "/((?!api/.*).*)",
+      "destination": "/server/(tabs)/index.html"
+    }
+  ]
+}
