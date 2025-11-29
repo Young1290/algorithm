@@ -24,6 +24,29 @@ import type {
 } from '../types/conversation';
 
 /**
+ * Recursively remove undefined values from an object
+ * Firestore doesn't accept undefined values anywhere in the document
+ */
+function removeUndefined<T>(obj: T): T {
+  if (obj === null || obj === undefined) {
+    return obj;
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(item => removeUndefined(item)) as T;
+  }
+  if (typeof obj === 'object') {
+    const cleaned: Record<string, any> = {};
+    for (const [key, value] of Object.entries(obj)) {
+      if (value !== undefined) {
+        cleaned[key] = removeUndefined(value);
+      }
+    }
+    return cleaned as T;
+  }
+  return obj;
+}
+
+/**
  * Get the current user's ID or throw if not authenticated
  */
 function getUserId(): string {
@@ -141,10 +164,14 @@ export async function createConversation(
       createdAt: now,
       updatedAt: now,
       messages: options.initialMessages || [],
-      language: options.language,
     };
 
-    await setDoc(getConversationRef(id), conversation);
+    // Only add language if defined (Firestore doesn't allow undefined)
+    if (options.language) {
+      conversation.language = options.language;
+    }
+
+    await setDoc(getConversationRef(id), removeUndefined(conversation));
     return conversation;
   } catch (error) {
     console.error('Failed to create conversation:', error);
@@ -169,17 +196,27 @@ export async function updateConversation(
     }
 
     const current = docSnap.data() as Conversation;
-    const updated: Partial<Conversation> = {
-      ...updates,
+
+    // Build update object without undefined values (Firestore doesn't allow undefined)
+    const updated: Record<string, any> = {
       updatedAt: Date.now(),
     };
 
-    // Auto-generate title from messages if not explicitly provided
-    if (updates.messages && !updates.title) {
-      updated.title = generateTitle(updates.messages, current.title);
+    if (updates.title !== undefined) {
+      updated.title = updates.title;
+    }
+    if (updates.messages !== undefined) {
+      updated.messages = updates.messages;
+      // Auto-generate title from messages if not explicitly provided
+      if (!updates.title) {
+        updated.title = generateTitle(updates.messages, current.title);
+      }
+    }
+    if (updates.language !== undefined) {
+      updated.language = updates.language;
     }
 
-    await updateDoc(docRef, updated);
+    await updateDoc(docRef, removeUndefined(updated));
     return { ...current, ...updated, id } as Conversation;
   } catch (error) {
     console.error(`Failed to update conversation ${id}:`, error);

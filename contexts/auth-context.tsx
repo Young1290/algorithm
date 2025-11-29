@@ -53,6 +53,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
     androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
   });
 
+  // Debug: Log the redirect URI that needs to be added to Google Cloud Console
+  useEffect(() => {
+    if (request?.redirectUri) {
+      console.log('===========================================');
+      console.log('ADD THIS REDIRECT URI TO GOOGLE CLOUD CONSOLE:');
+      console.log(request.redirectUri);
+      console.log('===========================================');
+    }
+  }, [request]);
+
   // Subscribe to auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
@@ -65,11 +75,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Handle Google OAuth response
   useEffect(() => {
     if (response?.type === 'success') {
-      const { id_token } = response.params;
-      const credential = GoogleAuthProvider.credential(id_token);
-      signInWithCredential(auth, credential).catch((error) => {
-        console.error('Google sign-in error:', error);
-      });
+      console.log('Google OAuth response params:', response.params);
+      const { id_token, access_token } = response.params;
+
+      // Web returns access_token, native returns id_token
+      if (id_token) {
+        console.log('Using id_token for auth');
+        const credential = GoogleAuthProvider.credential(id_token);
+        signInWithCredential(auth, credential).catch((error) => {
+          console.error('Google sign-in error:', error);
+        });
+      } else if (access_token) {
+        console.log('Using access_token for auth');
+        // For web, we need to use the access token differently
+        const credential = GoogleAuthProvider.credential(null, access_token);
+        signInWithCredential(auth, credential).catch((error) => {
+          console.error('Google sign-in error with access_token:', error);
+        });
+      } else {
+        console.error('No id_token or access_token in response:', response.params);
+      }
+    } else if (response) {
+      console.log('Google OAuth response type:', response.type);
     }
   }, [response]);
 
