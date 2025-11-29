@@ -1,74 +1,55 @@
 import { createDeepSeek } from '@ai-sdk/deepseek';
 import {
-    convertToModelMessages,
-    stepCountIs,
-    streamText,
-    tool,
-    UIMessage,
+  convertToModelMessages,
+  stepCountIs,
+  streamText,
+  tool,
+  UIMessage,
 } from 'ai';
 import { z } from 'zod';
 import {
-    analyzePositionWithSummary,
-    calculateCapitalAdjustmentsWithSummary,
-    calculateTargetPricesWithSummary
-} from '../app/lib/bitcoin-trading';
+  analyzePositionWithSummary,
+  calculateCapitalAdjustmentsWithSummary,
+  calculateTargetPricesWithSummary
+} from '../lib/bitcoin-trading';
 import {
-    fetchBinance24hStats,
-    fetchBinancePrice,
-    formatStrategyOutput,
-    generateStrategies
-} from '../app/lib/strategy-engine';
-
-// Vercel Edge Runtime configuration
-export const config = {
-    runtime: 'edge',
-  regions: ['sin1'], // 新加坡节点，离你近，网络快
-};
+  fetchBinance24hStats,
+  fetchBinancePrice,
+  formatStrategyOutput,
+  generateStrategies
+} from '../lib/strategy-engine';
 
 // Initialize DeepSeek with API key
 const deepseek = createDeepSeek({
   apiKey: process.env.DEEPSEEK_API_KEY || '',
 });
 
-// Vercel 原生函数 (默认导出)
-export default async function handler(request: Request) {
-  // 处理 CORS
-  if (request.method === 'OPTIONS') {
-    return new Response('ok', { 
-      headers: { 'Access-Control-Allow-Origin': '*' } 
-    });
+export async function POST(req: Request) {
+  // Use flexible type definition to support both simple format from frontend and complex UIMessage format
+  const { messages, language = 'zh' }: {
+    messages: Array<{ role: string; content: string } | UIMessage>;
+    language?: string
+  } = await req.json();
+
+  // Check if the last message contains trading-related keywords
+  const lastMessage = messages[messages.length - 1];
+
+  // Support both plain text content and complex parts format
+  let messageText = '';
+
+  if ('content' in lastMessage && typeof lastMessage.content === 'string') {
+    // Case 1: Frontend sends plain text
+    messageText = lastMessage.content;
+  } else if ('parts' in lastMessage && Array.isArray(lastMessage.parts)) {
+    // Case 2: Frontend sends complex structure (SDK default)
+    messageText = lastMessage.parts
+      .filter((part: any) => part.type === 'text')
+      .map((part: any) => part.text)
+      .join(' ');
   }
 
-  if (request.method !== 'POST') {
-    return new Response('Method Not Allowed', { status: 405 });
-  }
-
-  try {
-    // ✅ 使用更灵活的类型定义，兼容前端发送的简单格式
-    const { messages, language = 'zh' }: { 
-      messages: Array<{ role: string; content: string } | UIMessage>; 
-      language?: string 
-    } = await request.json();
-
-    // Check if the last message contains trading-related keywords
-    const lastMessage = messages[messages.length - 1];
-    
-    // ✅ 修复：兼容纯文本 content 和 复杂 parts 两种格式
-    let messageText = '';
-    
-    if ('content' in lastMessage && typeof lastMessage.content === 'string') {
-        // 情况 1: 前端发送的是纯文本 (我们现在的做法)
-        messageText = lastMessage.content;
-    } else if ('parts' in lastMessage && Array.isArray(lastMessage.parts)) {
-        // 情况 2: 前端发送的是复杂结构 (SDK 默认做法)
-        messageText = lastMessage.parts
-        .filter((part: any) => part.type === 'text')
-        .map((part: any) => part.text)
-        .join(' ');
-    }
-
-    // Enhanced trading data detection - includes more number formats
-    const containsTradingData = /(\$\d+k|\$\d+,\d+|\d+,\d+|bought|entry|position|profit|loss|BTC|bitcoin|仓位|盈利|亏损|资金|买了|总资金|本金|杠杆|leverage|ROI|收益|目标)/i.test(messageText);
+  // Enhanced trading data detection - includes more number formats
+  const containsTradingData = /(\$\d+k|\$\d+,\d+|\d+,\d+|bought|entry|position|profit|loss|BTC|bitcoin|仓位|盈利|亏损|资金|买了|总资金|本金|杠杆|leverage|ROI|收益|目标)/i.test(messageText);
 
   console.log('🔍 Message text:', messageText);
   console.log('🔍 Language:', language);
@@ -182,17 +163,17 @@ Respond in English.`,
 
   const systemPrompt = systemPrompts[language as keyof typeof systemPrompts] || systemPrompts.en;
 
-  // ✅ 转换简单格式消息为 UIMessage 格式
+  // Convert simple format messages to UIMessage format for convertToModelMessages compatibility
   const uiMessages: UIMessage[] = messages.map((msg, index) => {
     if ('content' in msg && typeof msg.content === 'string') {
-      // 简单格式：转换为 UIMessage
+      // Simple format: convert to UIMessage
       return {
         id: `msg-${index}`,
         role: msg.role as 'user' | 'assistant',
         parts: [{ type: 'text' as const, text: msg.content }]
       } as UIMessage;
     }
-    // 已经是 UIMessage 格式
+    // Already UIMessage format
     return msg as UIMessage;
   });
 
@@ -393,7 +374,7 @@ Respond in English.`,
             if (!marketPrice) {
               console.log(`🔍 Fetching ${params.symbol} price from Binance...`);
               const livePrice = await fetchBinancePrice(params.symbol);
-              
+
               if (livePrice) {
                 marketPrice = livePrice;
                 console.log(`✅ Fetched live price: $${marketPrice}`);
@@ -419,7 +400,7 @@ Respond in English.`,
 
             // Format output (removed language parameter as it's not used in new version)
             const summary = formatStrategyOutput(result);
-            
+
             console.log('✅ planToAchieveProfitTarget completed successfully');
             return {
               summary,
@@ -439,12 +420,10 @@ Respond in English.`,
     },
   });
 
-    return result.toTextStreamResponse();
-
-  } catch (error) {
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }), { 
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }
+  return result.toUIMessageStreamResponse({
+    headers: {
+      'Content-Type': 'application/octet-stream',
+      'Content-Encoding': 'none',
+    },
+  });
 }
