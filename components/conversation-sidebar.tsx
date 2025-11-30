@@ -2,11 +2,14 @@ import type { ConversationMetadata } from "@/app/lib/types/conversation";
 import { useAuth } from "@/contexts/auth-context";
 import { useConversations } from "@/contexts/conversation-context";
 import React, { memo } from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useTranslation } from "react-i18next";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { IconSymbol } from "./ui/icon-symbol";
 
-const formatDate = (timestamp: number, t: (key: string, options?: object) => string) => {
+const formatDate = (
+  timestamp: number,
+  t: (key: string, options?: object) => string
+) => {
   const date = new Date(timestamp);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
@@ -67,7 +70,9 @@ export function ConversationSidebar({ onClose }: ConversationSidebarProps) {
   };
 
   const handleDeleteConversation = (id: string, title: string) => {
-    const confirmed = window.confirm(t("conversation.deleteConfirmTitle", { title }));
+    const confirmed = window.confirm(
+      t("conversation.deleteConfirmTitle", { title })
+    );
     if (confirmed) {
       deleteConversation(id).catch((error) => {
         console.error("Delete failed:", error);
@@ -81,19 +86,21 @@ export function ConversationSidebar({ onClose }: ConversationSidebarProps) {
   );
 
   return (
-    <View className="flex-1 w-[280px] bg-white">
+    <View className="flex-1 w-[280px] bg-white border-r border-slate-100">
       {/* Header */}
       <View className="px-4 pt-5 pb-4 border-b border-slate-100">
-        <Text className="text-base font-semibold mb-4 text-slate-700 tracking-tight">
+        {/* <Text className="text-base font-semibold mb-4 text-slate-700 tracking-tight">
           {t("conversation.title")}
-        </Text>
+        </Text> */}
         <TouchableOpacity
           onPress={handleNewChat}
           className="flex-row items-center justify-center py-2.5 px-4 rounded-xl gap-2 border border-blue-500 bg-transparent active:bg-blue-50"
           activeOpacity={0.8}
         >
           <IconSymbol name="plus" size={18} color="#3b82f6" />
-          <Text className="text-blue-500 font-semibold text-sm">{t("conversation.newChat")}</Text>
+          <Text className="text-blue-500 font-semibold text-sm">
+            {t("conversation.newChat")}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -174,16 +181,10 @@ const ConversationItem = memo(function ConversationItem({
   return (
     <View
       className={`py-3.5 px-4 border-l-2 relative ${
-        isActive
-          ? "bg-blue-50 border-l-blue-500"
-          : "border-l-transparent"
+        isActive ? "bg-blue-50 border-l-blue-500" : "border-l-transparent"
       }`}
     >
-      <TouchableOpacity
-        className="pr-8"
-        onPress={onSelect}
-        activeOpacity={0.7}
-      >
+      <TouchableOpacity className="pr-8" onPress={onSelect} activeOpacity={0.7}>
         <Text
           className={`text-sm mb-1 ${
             isActive ? "text-slate-800 font-medium" : "text-slate-600"
