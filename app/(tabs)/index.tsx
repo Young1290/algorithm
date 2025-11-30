@@ -1,18 +1,17 @@
 import { ConversationSidebar } from "@/components/conversation-sidebar";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Colors, getProseStyles } from "@/constants/theme";
-import { useConversations } from "@/contexts/conversation-context";
+import { getProseStyles } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { usePersistedChat } from "@/hooks/use-persisted-chat";
 import { generateAPIUrl } from "@/utils";
 import { DefaultChatTransport } from "ai";
 import { fetch as expoFetch } from "expo/fetch";
+import { Button } from "heroui-native";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   SafeAreaView,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -24,292 +23,136 @@ export default function App() {
   const [input, setInput] = useState("");
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const { t, i18n } = useTranslation();
-  const { startNewConversation } = useConversations();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  const colors = isDark ? Colors.dark : Colors.light;
   const proseStyles = getProseStyles(isDark);
 
-  const { messages, error, sendMessage, conversationLoading } =
-    usePersistedChat({
-      transport: new DefaultChatTransport({
-        fetch: expoFetch as unknown as typeof globalThis.fetch,
-        api: generateAPIUrl("/api/chat"),
-        body: {
-          language: i18n.language,
-        },
-      }),
-      onError: (error) => console.error(error, "ERROR"),
-    });
+  const { messages, error, sendMessage } = usePersistedChat({
+    transport: new DefaultChatTransport({
+      fetch: expoFetch as unknown as typeof globalThis.fetch,
+      api: generateAPIUrl("/api/chat"),
+      body: {
+        language: i18n.language,
+      },
+    }),
+    onError: (error) => console.error(error, "ERROR"),
+  });
 
-  if (error)
+  if (error) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <Text style={{ color: colors.text }}>{error.message}</Text>
+      <View className="flex-1 items-center justify-center bg-background">
+        <Text className="text-foreground">{error.message}</Text>
       </View>
     );
+  }
 
   return (
-    <SafeAreaView
-      style={[styles.safeArea, { backgroundColor: colors.backgroundSecondary }]}
-    >
-      <View style={styles.mainLayout}>
+    <SafeAreaView className="flex-1 bg-default-100">
+      <View className="flex-1 flex-row">
         {/* Sidebar */}
         {sidebarVisible && (
-          <View style={[styles.sidebar, { borderRightColor: '#333333' }]}>
+          <View className="border-r border-default-300">
             <ConversationSidebar onClose={() => setSidebarVisible(false)} />
           </View>
         )}
 
         {/* Main Content */}
-        <View
-          style={[
-            styles.container,
-            { backgroundColor: colors.backgroundSecondary },
-          ]}
-        >
-          <View
-            style={[
-              styles.header,
-              {
-                backgroundColor: colors.background,
-                borderBottomColor: colors.border,
-              },
-            ]}
-          >
-            {/* Menu Button */}
+        <View className="flex-1 bg-default-100">
+          {/* Header */}
+          <View className="flex-row items-center px-4 py-3 bg-background border-b border-default-200">
             <TouchableOpacity
               onPress={() => setSidebarVisible(!sidebarVisible)}
-              style={[styles.menuButton, { backgroundColor: colors.accent }]}
+              className="p-2 mr-2 rounded-lg bg-primary min-w-[40px] min-h-[40px] items-center justify-center"
               activeOpacity={0.7}
             >
-              <Text style={styles.menuButtonText}>
+              <Text className="text-2xl font-semibold text-white">
                 {sidebarVisible ? "✕" : "☰"}
               </Text>
             </TouchableOpacity>
           </View>
 
-        <ScrollView
-          style={styles.messagesContainer}
-          contentContainerStyle={styles.messagesContent}
-        >
-          {messages.map((m) => (
-            <View
-              key={m.id}
-              style={[
-                styles.messageWrapper,
-                m.role === "user" && styles.userMessageWrapper,
-              ]}
-            >
+          {/* Messages */}
+          <ScrollView className="flex-1 px-4 py-3">
+            {messages.map((m) => (
               <View
-                style={[
-                  styles.messageBubble,
-                  {
-                    backgroundColor:
-                      m.role === "user" ? colors.userMessage : colors.aiMessage,
-                    borderColor: colors.border,
-                  },
-                ]}
+                key={m.id}
+                className={`mb-4 ${m.role === "user" ? "items-end" : ""}`}
               >
-                {m.parts.map((part, i) => {
-                  switch (part.type) {
-                    case "text":
-                      return (
-                        <View
-                          key={`${m.id}-${i}`}
-                          style={styles.messageContent}
-                        >
-                          <Markdown
-                            style={proseStyles}
-                            rules={{
-                              table: (node, children, parent, styles) => (
-                                <ScrollView
-                                  key={node.key}
-                                  horizontal
-                                  showsHorizontalScrollIndicator={true}
-                                  style={{ marginVertical: 12 }}
-                                >
-                                  <View style={styles.table}>{children}</View>
-                                </ScrollView>
-                              ),
-                            }}
-                          >
-                            {part.text}
-                          </Markdown>
-                        </View>
-                      );
-                    case "tool-weather":
-                    case "tool-convertFahrenheitToCelsius":
-                      return (
-                        <View key={`${m.id}-${i}`} style={styles.toolResult}>
-                          <Text
-                            style={[
-                              styles.toolResultText,
-                              { color: colors.textSecondary },
-                            ]}
-                          >
-                            {JSON.stringify(part, null, 2)}
-                          </Text>
-                        </View>
-                      );
-                  }
-                })}
+                <View
+                  className={`max-w-full rounded-xl border px-4 py-3 ${
+                    m.role === "user"
+                      ? "bg-default-200 border-default-300"
+                      : "bg-background border-default-200"
+                  }`}
+                >
+                  {m.parts.map((part, i) => {
+                    switch (part.type) {
+                      case "text":
+                        return (
+                          <View key={`${m.id}-${i}`} className="w-full">
+                            <Markdown
+                              style={proseStyles}
+                              rules={{
+                                table: (node, children, parent, styles) => (
+                                  <ScrollView
+                                    key={node.key}
+                                    horizontal
+                                    showsHorizontalScrollIndicator={true}
+                                    style={{ marginVertical: 12 }}
+                                  >
+                                    <View style={styles.table}>{children}</View>
+                                  </ScrollView>
+                                ),
+                              }}
+                            >
+                              {part.text}
+                            </Markdown>
+                          </View>
+                        );
+                      case "tool-weather":
+                      case "tool-convertFahrenheitToCelsius":
+                        return (
+                          <View key={`${m.id}-${i}`} className="mt-2">
+                            <Text className="text-xs font-mono text-default-500">
+                              {JSON.stringify(part, null, 2)}
+                            </Text>
+                          </View>
+                        );
+                    }
+                  })}
+                </View>
               </View>
-            </View>
-          ))}
-        </ScrollView>
+            ))}
+          </ScrollView>
 
-        <View
-          style={[
-            styles.inputContainer,
-            {
-              backgroundColor: colors.background,
-              borderTopColor: colors.border,
-              flexDirection: "row",
-            },
-          ]}
-        >
-          <TextInput
-            style={[
-              styles.input,
-              {
-                backgroundColor: colors.input,
-                borderColor: colors.inputBorder,
-                color: colors.text,
-                flex: 1,
-                marginRight: 16,
-              },
-            ]}
-            placeholderTextColor={colors.textTertiary}
-            placeholder={t("chat.placeholder")}
-            value={input}
-            onChange={(e) => setInput(e.nativeEvent.text)}
-            onSubmitEditing={(e) => {
-              e.preventDefault();
-              sendMessage({ text: input });
-              setInput("");
-            }}
-            multiline
-            maxLength={2000}
-          />
-          <TouchableOpacity
-            onPress={() => {
-              sendMessage({ text: input });
-              setInput("");
-            }}
-            style={[styles.sendButton, { backgroundColor: colors.accent }]}
-            activeOpacity={0.8}
-          >
-            <IconSymbol name="paperplane.fill" size={24} color="white" />
-          </TouchableOpacity>
+          {/* Input */}
+          <View className="flex-row px-4 py-3 bg-background border-t border-default-200">
+            <TextInput
+              className="flex-1 mr-4 px-4 py-3 rounded-xl border bg-default-100 border-default-300 text-foreground text-base min-h-[44px] max-h-[120px]"
+              placeholder={t("chat.placeholder")}
+              placeholderTextColor="#94a3b8"
+              value={input}
+              onChange={(e) => setInput(e.nativeEvent.text)}
+              onSubmitEditing={(e) => {
+                e.preventDefault();
+                sendMessage({ text: input });
+                setInput("");
+              }}
+              multiline
+              maxLength={2000}
+            />
+            <Button
+              className="justify-center items-center bg-primary"
+              onPress={() => {
+                sendMessage({ text: input });
+                setInput("");
+              }}
+            >
+              <IconSymbol name="paperplane.fill" size={24} color="white" />
+            </Button>
+          </View>
         </View>
-      </View>
       </View>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
-  mainLayout: {
-    flex: 1,
-    flexDirection: "row",
-  },
-  sidebar: {
-    borderRightWidth: 1,
-  },
-  container: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "flex-start",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  menuButton: {
-    padding: 8,
-    marginRight: 8,
-    borderRadius: 8,
-    minWidth: 40,
-    minHeight: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  menuButtonText: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: 'white',
-  },
-  newChatButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  newChatButtonText: {
-    color: "white",
-    fontWeight: "600",
-    fontSize: 14,
-  },
-  messagesContainer: {
-    flex: 1,
-  },
-  messagesContent: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  messageWrapper: {
-    marginBottom: 16,
-  },
-  userMessageWrapper: {
-    alignItems: "flex-end",
-  },
-  messageBubble: {
-    maxWidth: "100%",
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  roleLabel: {
-    fontSize: 11,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginBottom: 6,
-  },
-  messageContent: {
-    width: "100%",
-  },
-  toolResult: {
-    marginTop: 8,
-  },
-  toolResultText: {
-    fontSize: 12,
-    fontFamily: "monospace",
-  },
-  inputContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 15,
-    maxHeight: 120,
-    minHeight: 44,
-  },
-  sendButton: {
-    padding: 8,
-    borderRadius: 100,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});

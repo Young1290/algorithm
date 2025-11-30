@@ -9,7 +9,6 @@ import {
   TextInput,
   TouchableOpacity,
   Text,
-  StyleSheet,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -17,8 +16,6 @@ import {
 } from 'react-native';
 import { useAuth } from '@/contexts/auth-context';
 import { router } from 'expo-router';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/theme';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -27,10 +24,6 @@ export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
 
   const { signInWithEmail, signUpWithEmail, signInWithGoogle } = useAuth();
-
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const colors = isDark ? Colors.dark : Colors.light;
 
   const handleSubmit = async () => {
     if (!email.trim() || !password.trim()) {
@@ -58,7 +51,6 @@ export default function LoginScreen() {
     setIsLoading(true);
     try {
       await signInWithGoogle();
-      // Navigation happens automatically via auth state change
     } catch (error: any) {
       Alert.alert('Error', 'Google sign-in failed. Please try again.');
     } finally {
@@ -68,31 +60,24 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: colors.background }]}
+      className="flex-1 bg-background"
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View style={styles.content}>
-        <Text style={[styles.title, { color: colors.text }]}>
+      <View className="flex-1 justify-center p-6 max-w-[400px] w-full self-center">
+        <Text className="text-3xl font-bold text-center mb-2 text-foreground">
           {isSignUp ? 'Create Account' : 'Welcome Back'}
         </Text>
-        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+        <Text className="text-base text-center mb-8 text-default-500">
           {isSignUp
             ? 'Sign up to sync your conversations'
             : 'Sign in to continue'}
         </Text>
 
-        <View style={styles.form}>
+        <View className="gap-4">
           <TextInput
-            style={[
-              styles.input,
-              {
-                color: colors.text,
-                backgroundColor: colors.backgroundSecondary,
-                borderColor: colors.border,
-              },
-            ]}
+            className="border rounded-xl p-4 text-base text-foreground bg-default-100 border-default-300"
             placeholder="Email"
-            placeholderTextColor={colors.textTertiary}
+            placeholderTextColor="#94a3b8"
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
@@ -102,16 +87,9 @@ export default function LoginScreen() {
           />
 
           <TextInput
-            style={[
-              styles.input,
-              {
-                color: colors.text,
-                backgroundColor: colors.backgroundSecondary,
-                borderColor: colors.border,
-              },
-            ]}
+            className="border rounded-xl p-4 text-base text-foreground bg-default-100 border-default-300"
             placeholder="Password"
-            placeholderTextColor={colors.textTertiary}
+            placeholderTextColor="#94a3b8"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -120,7 +98,7 @@ export default function LoginScreen() {
           />
 
           <TouchableOpacity
-            style={[styles.button, { backgroundColor: colors.accent }]}
+            className="p-4 rounded-xl items-center justify-center min-h-[52px] bg-primary"
             onPress={handleSubmit}
             disabled={isLoading}
             activeOpacity={0.8}
@@ -128,33 +106,25 @@ export default function LoginScreen() {
             {isLoading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.buttonText}>
+              <Text className="text-white text-base font-semibold">
                 {isSignUp ? 'Sign Up' : 'Sign In'}
               </Text>
             )}
           </TouchableOpacity>
 
-          <View style={styles.divider}>
-            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-            <Text style={[styles.dividerText, { color: colors.textTertiary }]}>
-              or
-            </Text>
-            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+          <View className="flex-row items-center my-2">
+            <View className="flex-1 h-px bg-default-300" />
+            <Text className="px-4 text-sm text-default-500">or</Text>
+            <View className="flex-1 h-px bg-default-300" />
           </View>
 
           <TouchableOpacity
-            style={[
-              styles.googleButton,
-              {
-                backgroundColor: colors.backgroundSecondary,
-                borderColor: colors.border,
-              },
-            ]}
+            className="border p-4 rounded-xl items-center justify-center min-h-[52px] bg-default-100 border-default-300"
             onPress={handleGoogleSignIn}
             disabled={isLoading}
             activeOpacity={0.8}
           >
-            <Text style={[styles.googleButtonText, { color: colors.text }]}>
+            <Text className="text-base font-semibold text-foreground">
               Continue with Google
             </Text>
           </TouchableOpacity>
@@ -163,13 +133,11 @@ export default function LoginScreen() {
         <TouchableOpacity
           onPress={() => setIsSignUp(!isSignUp)}
           disabled={isLoading}
-          style={styles.switchButton}
+          className="mt-6"
         >
-          <Text style={[styles.switchText, { color: colors.textSecondary }]}>
-            {isSignUp
-              ? 'Already have an account? '
-              : "Don't have an account? "}
-            <Text style={{ color: colors.accent, fontWeight: '600' }}>
+          <Text className="text-center text-sm text-default-500">
+            {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
+            <Text className="text-primary font-semibold">
               {isSignUp ? 'Sign In' : 'Sign Up'}
             </Text>
           </Text>
@@ -197,81 +165,3 @@ function getErrorMessage(code: string): string {
 
   return errorMap[code] || 'An error occurred. Please try again.';
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 24,
-    maxWidth: 400,
-    width: '100%',
-    alignSelf: 'center',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 32,
-  },
-  form: {
-    gap: 16,
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-  },
-  button: {
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 52,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 8,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-  },
-  dividerText: {
-    paddingHorizontal: 16,
-    fontSize: 14,
-  },
-  googleButton: {
-    borderWidth: 1,
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 52,
-  },
-  googleButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  switchButton: {
-    marginTop: 24,
-  },
-  switchText: {
-    textAlign: 'center',
-    fontSize: 14,
-  },
-});

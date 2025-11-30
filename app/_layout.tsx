@@ -1,16 +1,22 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack, useRouter, useSegments } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
-import 'react-native-reanimated';
-import '@/i18n';
+import "@/i18n";
+import {
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider,
+} from "@react-navigation/native";
+import { Stack, useRouter, useSegments } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { useEffect } from "react";
+import "react-native-reanimated";
+import "./global.css";
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { ConversationProvider } from '@/contexts/conversation-context';
-import { AuthProvider, useAuth } from '@/contexts/auth-context';
-
+import { AuthProvider, useAuth } from "@/contexts/auth-context";
+import { ConversationProvider } from "@/contexts/conversation-context";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { HeroUINativeProvider } from "heroui-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 export const unstable_settings = {
-  anchor: '(tabs)',
+  anchor: "(tabs)",
 };
 
 /**
@@ -26,14 +32,14 @@ function RootLayoutNav() {
   useEffect(() => {
     if (loading) return;
 
-    const inAuthGroup = (segments[0] as string) === '(auth)';
+    const inAuthGroup = (segments[0] as string) === "(auth)";
 
     if (!user && !inAuthGroup) {
       // User is not signed in and not on auth screen, redirect to login
-      router.replace('/(auth)/login' as any);
+      router.replace("/(auth)/login" as any);
     } else if (user && inAuthGroup) {
       // User is signed in but on auth screen, redirect to main app
-      router.replace('/(tabs)' as any);
+      router.replace("/(tabs)" as any);
     }
   }, [user, loading, segments]);
 
@@ -43,16 +49,25 @@ function RootLayoutNav() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <ConversationProvider>
-        <Stack>
-          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-        </Stack>
-        <StatusBar style="auto" />
-      </ConversationProvider>
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <HeroUINativeProvider>
+        <ThemeProvider
+          value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
+        >
+          <ConversationProvider>
+            <Stack>
+              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen
+                name="modal"
+                options={{ presentation: "modal", title: "Modal" }}
+              />
+            </Stack>
+            <StatusBar style="auto" />
+          </ConversationProvider>
+        </ThemeProvider>
+      </HeroUINativeProvider>
+    </GestureHandlerRootView>
   );
 }
 
