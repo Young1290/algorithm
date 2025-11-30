@@ -2,7 +2,7 @@ import type { ConversationMetadata } from "@/app/lib/types/conversation";
 import { useAuth } from "@/contexts/auth-context";
 import { useConversations } from "@/contexts/conversation-context";
 import React, { memo } from "react";
-import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { IconSymbol } from "./ui/icon-symbol";
 
 const formatDate = (timestamp: number) => {
@@ -35,21 +35,15 @@ export function ConversationSidebar({ onClose }: ConversationSidebarProps) {
   } = useConversations();
   const { user, signOut } = useAuth();
 
-  const handleSignOut = () => {
-    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Sign Out",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await signOut();
-          } catch (error) {
-            console.error("Failed to sign out:", error);
-          }
-        },
-      },
-    ]);
+  const handleSignOut = async () => {
+    const confirmed = window.confirm("Are you sure you want to sign out?");
+    if (confirmed) {
+      try {
+        await signOut();
+      } catch (error) {
+        console.error("Failed to sign out:", error);
+      }
+    }
   };
 
   const handleSelectConversation = async (id: string) => {

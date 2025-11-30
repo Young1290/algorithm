@@ -109,5 +109,48 @@
     "selectLanguage": "选择语言",
     "english": "English",
     "chinese": "中文"
+  },
+  "conversation": {
+    "history": "对话历史",
+    "new": "新建",
+    "messages": "条消息",
+    "noConversations": "暂无对话",
+    "justNow": "刚刚",
+    "minutesAgo": "{{count}}分钟前",
+    "hoursAgo": "{{count}}小时前",
+    "daysAgo": "{{count}}天前",
+    "deleteTitle": "删除对话",
+    "deleteConfirm": "确定要删除这个对话吗？",
+    "cancel": "取消",
+    "delete": "删除"
+  },
+  "auth": {
+    "createAccount": "创建账户",
+    "welcomeBack": "欢迎回来",
+    "signUpSubtitle": "注册以同步您的对话",
+    "signInSubtitle": "登录以继续",
+    "email": "邮箱",
+    "password": "密码",
+    "signUp": "注册",
+    "signIn": "登录",
+    "or": "或",
+    "continueWithGoogle": "使用 Google 登录",
+    "alreadyHaveAccount": "已有账户？",
+    "dontHaveAccount": "没有账户？",
+    "error": "错误",
+    "enterBothFields": "请输入邮箱和密码",
+    "googleSignInFailed": "Google 登录失败，请重试",
+    "errors": {
+      "invalidEmail": "请输入有效的邮箱地址",
+      "userDisabled": "此账户已被禁用",
+      "userNotFound": "未找到此邮箱对应的账户",
+      "wrongPassword": "密码错误",
+      "emailInUse": "此邮箱已被注册",
+      "weakPassword": "密码至少需要6个字符",
+      "tooManyRequests": "尝试次数过多，请稍后再试",
+      "networkError": "网络错误，请检查网络连接",
+      "invalidCredential": "邮箱或密码无效",
+      "default": "发生错误，请重试"
+    }
   }
 }

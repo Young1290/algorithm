@@ -1,5 +1,4 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Localization from 'expo-localization';
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import { Platform } from 'react-native'; // 1. 引入 Platform
@@ -14,16 +13,8 @@ const resources = {
   en: { translation: en },
 };
 
-// Get the device language
+// Get the default language (Chinese)
 const getDeviceLanguage = () => {
-  // Expo Localization 在服务端可能返回空，做个防护
-  const locales = Localization.getLocales();
-  const locale = locales && locales[0] ? locales[0] : { languageCode: 'zh' };
-  const languageCode = locale.languageCode || 'zh';
-
-  if (languageCode.startsWith('en')) {
-    return 'en';
-  }
   return 'zh';
 };
 

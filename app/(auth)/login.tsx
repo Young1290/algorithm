@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { useAuth } from '@/contexts/auth-context';
 import { router } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -24,10 +25,26 @@ export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
 
   const { signInWithEmail, signUpWithEmail, signInWithGoogle } = useAuth();
+  const { t } = useTranslation();
+
+  const getErrorMessage = (code: string): string => {
+    const errorMap: Record<string, string> = {
+      'auth/invalid-email': t('auth.errors.invalidEmail'),
+      'auth/user-disabled': t('auth.errors.userDisabled'),
+      'auth/user-not-found': t('auth.errors.userNotFound'),
+      'auth/wrong-password': t('auth.errors.wrongPassword'),
+      'auth/email-already-in-use': t('auth.errors.emailInUse'),
+      'auth/weak-password': t('auth.errors.weakPassword'),
+      'auth/too-many-requests': t('auth.errors.tooManyRequests'),
+      'auth/network-request-failed': t('auth.errors.networkError'),
+      'auth/invalid-credential': t('auth.errors.invalidCredential'),
+    };
+    return errorMap[code] || t('auth.errors.default');
+  };
 
   const handleSubmit = async () => {
     if (!email.trim() || !password.trim()) {
-      Alert.alert('Error', 'Please enter both email and password');
+      Alert.alert(t('auth.error'), t('auth.enterBothFields'));
       return;
     }
 
@@ -41,7 +58,7 @@ export default function LoginScreen() {
       router.replace('/(tabs)' as any);
     } catch (error: any) {
       const message = getErrorMessage(error.code || error.message);
-      Alert.alert('Error', message);
+      Alert.alert(t('auth.error'), message);
     } finally {
       setIsLoading(false);
     }
@@ -52,7 +69,7 @@ export default function LoginScreen() {
     try {
       await signInWithGoogle();
     } catch (error: any) {
-      Alert.alert('Error', 'Google sign-in failed. Please try again.');
+      Alert.alert(t('auth.error'), t('auth.googleSignInFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -65,18 +82,18 @@ export default function LoginScreen() {
     >
       <View className="flex-1 justify-center p-6 max-w-[400px] w-full self-center">
         <Text className="text-3xl font-bold text-center mb-2 text-slate-800">
-          {isSignUp ? 'Create Account' : 'Welcome Back'}
+          {isSignUp ? t('auth.createAccount') : t('auth.welcomeBack')}
         </Text>
         <Text className="text-base text-center mb-8 text-slate-500">
           {isSignUp
-            ? 'Sign up to sync your conversations'
-            : 'Sign in to continue'}
+            ? t('auth.signUpSubtitle')
+            : t('auth.signInSubtitle')}
         </Text>
 
         <View className="gap-4">
           <TextInput
             className="border rounded-2xl p-4 text-base text-slate-800 bg-slate-50 border-slate-200"
-            placeholder="Email"
+            placeholder={t('auth.email')}
             placeholderTextColor="#94a3b8"
             value={email}
             onChangeText={setEmail}
@@ -88,7 +105,7 @@ export default function LoginScreen() {
 
           <TextInput
             className="border rounded-2xl p-4 text-base text-slate-800 bg-slate-50 border-slate-200"
-            placeholder="Password"
+            placeholder={t('auth.password')}
             placeholderTextColor="#94a3b8"
             value={password}
             onChangeText={setPassword}
