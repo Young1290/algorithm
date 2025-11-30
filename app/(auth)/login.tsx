@@ -124,14 +124,14 @@ export default function LoginScreen() {
               <ActivityIndicator color="#fff" />
             ) : (
               <Text className="text-white text-base font-semibold">
-                {isSignUp ? 'Sign Up' : 'Sign In'}
+                {isSignUp ? t('auth.signUp') : t('auth.signIn')}
               </Text>
             )}
           </TouchableOpacity>
 
           <View className="flex-row items-center my-2">
             <View className="flex-1 h-px bg-slate-200" />
-            <Text className="px-4 text-sm text-slate-400">or</Text>
+            <Text className="px-4 text-sm text-slate-400">{t('auth.or')}</Text>
             <View className="flex-1 h-px bg-slate-200" />
           </View>
 
@@ -142,7 +142,7 @@ export default function LoginScreen() {
             activeOpacity={0.8}
           >
             <Text className="text-base font-semibold text-slate-800">
-              Continue with Google
+              {t('auth.continueWithGoogle')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -153,32 +153,13 @@ export default function LoginScreen() {
           className="mt-6"
         >
           <Text className="text-center text-sm text-slate-500">
-            {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
+            {isSignUp ? t('auth.alreadyHaveAccount') : t('auth.dontHaveAccount')}
             <Text className="text-blue-500 font-semibold">
-              {isSignUp ? 'Sign In' : 'Sign Up'}
+              {isSignUp ? t('auth.signIn') : t('auth.signUp')}
             </Text>
           </Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   );
-}
-
-/**
- * Convert Firebase error codes to user-friendly messages
- */
-function getErrorMessage(code: string): string {
-  const errorMap: Record<string, string> = {
-    'auth/invalid-email': 'Please enter a valid email address',
-    'auth/user-disabled': 'This account has been disabled',
-    'auth/user-not-found': 'No account found with this email',
-    'auth/wrong-password': 'Incorrect password',
-    'auth/email-already-in-use': 'An account already exists with this email',
-    'auth/weak-password': 'Password must be at least 6 characters',
-    'auth/too-many-requests': 'Too many attempts. Please try again later',
-    'auth/network-request-failed': 'Network error. Please check your connection',
-    'auth/invalid-credential': 'Invalid email or password',
-  };
-
-  return errorMap[code] || 'An error occurred. Please try again.';
 }

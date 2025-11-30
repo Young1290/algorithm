@@ -3,9 +3,10 @@ import { useAuth } from "@/contexts/auth-context";
 import { useConversations } from "@/contexts/conversation-context";
 import React, { memo } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { IconSymbol } from "./ui/icon-symbol";
 
-const formatDate = (timestamp: number) => {
+const formatDate = (timestamp: number, t: (key: string, options?: object) => string) => {
   const date = new Date(timestamp);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
@@ -13,12 +14,12 @@ const formatDate = (timestamp: number) => {
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
 
-  if (diffMins < 1) return "Just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffMins < 1) return t("conversation.justNow");
+  if (diffMins < 60) return t("conversation.minutesAgo", { count: diffMins });
+  if (diffHours < 24) return t("conversation.hoursAgo", { count: diffHours });
+  if (diffDays < 7) return t("conversation.daysAgo", { count: diffDays });
 
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return date.toLocaleDateString();
 };
 
 interface ConversationSidebarProps {
@@ -34,9 +35,10 @@ export function ConversationSidebar({ onClose }: ConversationSidebarProps) {
     deleteConversation,
   } = useConversations();
   const { user, signOut } = useAuth();
+  const { t } = useTranslation();
 
   const handleSignOut = async () => {
-    const confirmed = window.confirm("Are you sure you want to sign out?");
+    const confirmed = window.confirm(t("conversation.signOutConfirm"));
     if (confirmed) {
       try {
         await signOut();
@@ -65,11 +67,11 @@ export function ConversationSidebar({ onClose }: ConversationSidebarProps) {
   };
 
   const handleDeleteConversation = (id: string, title: string) => {
-    const confirmed = window.confirm(`Delete "${title}"?`);
+    const confirmed = window.confirm(t("conversation.deleteConfirmTitle", { title }));
     if (confirmed) {
       deleteConversation(id).catch((error) => {
         console.error("Delete failed:", error);
-        window.alert("Failed to delete conversation");
+        window.alert(t("conversation.deleteFailed"));
       });
     }
   };
@@ -83,7 +85,7 @@ export function ConversationSidebar({ onClose }: ConversationSidebarProps) {
       {/* Header */}
       <View className="px-4 pt-5 pb-4 border-b border-slate-100">
         <Text className="text-base font-semibold mb-4 text-slate-700 tracking-tight">
-          Conversations
+          {t("conversation.title")}
         </Text>
         <TouchableOpacity
           onPress={handleNewChat}
@@ -91,7 +93,7 @@ export function ConversationSidebar({ onClose }: ConversationSidebarProps) {
           activeOpacity={0.8}
         >
           <IconSymbol name="plus" size={18} color="#3b82f6" />
-          <Text className="text-blue-500 font-semibold text-sm">New Chat</Text>
+          <Text className="text-blue-500 font-semibold text-sm">{t("conversation.newChat")}</Text>
         </TouchableOpacity>
       </View>
 
@@ -103,10 +105,10 @@ export function ConversationSidebar({ onClose }: ConversationSidebarProps) {
               <IconSymbol name="plus" size={20} color="#cbd5e1" />
             </View>
             <Text className="text-sm text-center text-slate-400">
-              No conversations yet
+              {t("conversation.noConversations")}
             </Text>
             <Text className="text-xs text-center text-slate-300 mt-1">
-              Start a new chat above
+              {t("conversation.startNewChat")}
             </Text>
           </View>
         ) : (
@@ -117,6 +119,7 @@ export function ConversationSidebar({ onClose }: ConversationSidebarProps) {
               isActive={currentConversation?.id === conv.id}
               onSelect={() => handleSelectConversation(conv.id)}
               onDelete={() => handleDeleteConversation(conv.id, conv.title)}
+              t={t}
             />
           ))
         )}
@@ -143,7 +146,7 @@ export function ConversationSidebar({ onClose }: ConversationSidebarProps) {
                 color="#94a3b8"
               />
               <Text className="text-xs font-medium text-slate-400">
-                Sign Out
+                {t("conversation.signOut")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -158,6 +161,7 @@ interface ConversationItemProps {
   isActive: boolean;
   onSelect: () => void;
   onDelete: () => void;
+  t: (key: string, options?: object) => string;
 }
 
 const ConversationItem = memo(function ConversationItem({
@@ -165,6 +169,7 @@ const ConversationItem = memo(function ConversationItem({
   isActive,
   onSelect,
   onDelete,
+  t,
 }: ConversationItemProps) {
   return (
     <View
@@ -189,11 +194,11 @@ const ConversationItem = memo(function ConversationItem({
         </Text>
         <View className="flex-row items-center gap-1.5">
           <Text className="text-xs text-slate-400">
-            {conversation.messageCount} messages
+            {conversation.messageCount} {t("conversation.messages")}
           </Text>
           <Text className="text-xs text-slate-300">·</Text>
           <Text className="text-xs text-slate-400">
-            {formatDate(conversation.updatedAt)}
+            {formatDate(conversation.updatedAt, t)}
           </Text>
         </View>
       </TouchableOpacity>
