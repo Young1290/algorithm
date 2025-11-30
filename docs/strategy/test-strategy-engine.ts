@@ -2,11 +2,11 @@
 // Run with: npx tsx test-strategy-engine.ts
 
 import {
-    fetchBinance24hStats,
-    fetchBinancePrice,
-    formatStrategyOutput,
-    generateStrategies
-} from './app/lib/strategy-engine';
+  fetchBinance24hStats,
+  fetchBinancePrice,
+  formatStrategyOutput,
+  generateStrategies
+} from '../../app/lib/strategy-engine';
 
 async function testBinanceAPI() {
   console.log('🧪 Testing Binance API Integration\n');

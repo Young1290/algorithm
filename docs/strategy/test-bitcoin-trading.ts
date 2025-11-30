@@ -5,10 +5,10 @@
 
 import {
   analyzePositionWithSummary,
-  calculateTargetPricesWithSummary,
   calculateCapitalAdjustmentsWithSummary,
+  calculateTargetPricesWithSummary,
   type Trade
-} from './app/lib/bitcoin-trading';
+} from '../../app/lib/bitcoin-trading';
 
 // Example data from Python file (assets/Bitcoin.py)
 const trades: Trade[] = [
