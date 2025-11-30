@@ -16,7 +16,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { HeroUINativeProvider } from "heroui-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 export const unstable_settings = {
-  anchor: "(tabs)",
+  anchor: "(chat)",
 };
 
 /**
@@ -39,7 +39,7 @@ function RootLayoutNav() {
       router.replace("/(auth)/login" as any);
     } else if (user && inAuthGroup) {
       // User is signed in but on auth screen, redirect to main app
-      router.replace("/(tabs)" as any);
+      router.replace("/(chat)" as any);
     }
   }, [user, loading, segments]);
 
@@ -57,7 +57,7 @@ function RootLayoutNav() {
           <ConversationProvider>
             <Stack>
               <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="(chat)" options={{ headerShown: false }} />
               <Stack.Screen
                 name="modal"
                 options={{ presentation: "modal", title: "Modal" }}

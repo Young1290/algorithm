@@ -95,15 +95,15 @@ export function ConversationSidebar({ onClose }: ConversationSidebarProps) {
   );
 
   return (
-    <View className="flex-1 w-[280px] bg-black">
+    <View className="flex-1 w-[280px] bg-white">
       {/* Header */}
-      <View className="p-4 border-b border-default-700">
-        <Text className="text-lg font-bold mb-3 text-white">
+      <View className="p-4 border-b border-slate-200">
+        <Text className="text-lg font-bold mb-3 text-slate-800">
           Conversations
         </Text>
         <TouchableOpacity
           onPress={handleNewChat}
-          className="flex-row items-center justify-center py-2.5 px-4 rounded-lg gap-2 bg-primary"
+          className="flex-row items-center justify-center py-2.5 px-4 rounded-lg gap-2 bg-blue-500"
           activeOpacity={0.8}
         >
           <IconSymbol name="plus" size={18} color="#fff" />
@@ -115,7 +115,7 @@ export function ConversationSidebar({ onClose }: ConversationSidebarProps) {
       <ScrollView className="flex-1">
         {sortedConversations.length === 0 ? (
           <View className="p-8 items-center">
-            <Text className="text-sm text-center text-default-500">
+            <Text className="text-sm text-center text-slate-400">
               No conversations yet
             </Text>
           </View>
@@ -134,8 +134,8 @@ export function ConversationSidebar({ onClose }: ConversationSidebarProps) {
 
       {/* User Section */}
       {user && (
-        <View className="p-4 border-t border-default-700 gap-3">
-          <Text className="text-xs text-default-500" numberOfLines={1}>
+        <View className="p-4 border-t border-slate-200 gap-3">
+          <Text className="text-xs text-slate-500" numberOfLines={1}>
             {user.email}
           </Text>
           <TouchableOpacity
@@ -144,7 +144,7 @@ export function ConversationSidebar({ onClose }: ConversationSidebarProps) {
             activeOpacity={0.7}
           >
             <IconSymbol name="rectangle.portrait.and.arrow.right" size={16} color="#ef4444" />
-            <Text className="text-sm font-medium text-danger">Sign Out</Text>
+            <Text className="text-sm font-medium text-red-500">Sign Out</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -168,7 +168,7 @@ function ConversationItem({
   return (
     <View
       className={`py-3 px-4 border-l-[3px] relative ${
-        isActive ? 'bg-default-900 border-l-primary' : 'border-l-transparent'
+        isActive ? 'bg-blue-50 border-l-blue-500' : 'border-l-transparent hover:bg-slate-50'
       }`}
     >
       <TouchableOpacity
@@ -178,17 +178,17 @@ function ConversationItem({
       >
         <View className="flex-row items-center justify-between mb-1">
           <Text
-            className={`text-sm flex-1 text-white ${isActive ? 'font-semibold' : 'font-medium'}`}
+            className={`text-sm flex-1 text-slate-800 ${isActive ? 'font-semibold' : 'font-medium'}`}
             numberOfLines={1}
           >
             {conversation.title}
           </Text>
         </View>
         <View className="flex-row items-center gap-2">
-          <Text className="text-xs text-default-500">
+          <Text className="text-xs text-slate-500">
             {conversation.messageCount} messages
           </Text>
-          <Text className="text-xs text-default-500">
+          <Text className="text-xs text-slate-400">
             {formatDate(conversation.updatedAt)}
           </Text>
         </View>
@@ -198,10 +198,10 @@ function ConversationItem({
       <View className="absolute right-4 top-0 bottom-0 justify-center z-10">
         <TouchableOpacity
           onPress={onDelete}
-          className="p-2 min-w-[32px] min-h-[32px] items-center justify-center bg-danger/10 rounded"
+          className="p-2 min-w-[32px] min-h-[32px] items-center justify-center bg-red-50 rounded"
           activeOpacity={0.6}
         >
-          <Text className="text-xl font-bold text-danger">✕</Text>
+          <IconSymbol name="xmark" size={16} color="#ef4444" />
         </TouchableOpacity>
       </View>
     </View>

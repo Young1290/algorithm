@@ -5,29 +5,32 @@
 
 import { Platform } from 'react-native';
 
-const tintColorLight = '#0a7ea4';
+const tintColorLight = '#3b82f6';
 const tintColorDark = '#60a5fa';
 
 export const Colors = {
   light: {
-    text: '#0f172a',
+    text: '#1e293b',
     textSecondary: '#64748b',
     textTertiary: '#94a3b8',
     background: '#ffffff',
     backgroundSecondary: '#f8fafc',
-    backgroundTertiary: '#f1f5f9',
+    backgroundTertiary: '#eff6ff',
     tint: tintColorLight,
     border: '#e2e8f0',
     borderLight: '#f1f5f9',
     icon: '#64748b',
     tabIconDefault: '#94a3b8',
     tabIconSelected: tintColorLight,
-    userMessage: '#f1f5f9',
+    userMessage: '#3b82f6',
+    userMessageText: '#ffffff',
     aiMessage: '#ffffff',
+    aiMessageBorder: '#e2e8f0',
     input: '#ffffff',
     inputBorder: '#e2e8f0',
-    accent: '#0a7ea4',
-    accentHover: '#0369a1',
+    accent: '#3b82f6',
+    accentHover: '#2563eb',
+    accentLight: '#eff6ff',
   },
   dark: {
     text: '#f1f5f9',
@@ -35,19 +38,22 @@ export const Colors = {
     textTertiary: '#64748b',
     background: '#0f172a',
     backgroundSecondary: '#1e293b',
-    backgroundTertiary: '#334155',
+    backgroundTertiary: '#1e3a5f',
     tint: tintColorDark,
     border: '#334155',
     borderLight: '#1e293b',
     icon: '#94a3b8',
     tabIconDefault: '#64748b',
     tabIconSelected: tintColorDark,
-    userMessage: '#1e293b',
-    aiMessage: '#0f172a',
+    userMessage: '#3b82f6',
+    userMessageText: '#ffffff',
+    aiMessage: '#1e293b',
+    aiMessageBorder: '#334155',
     input: '#1e293b',
     inputBorder: '#334155',
     accent: '#60a5fa',
     accentHover: '#3b82f6',
+    accentLight: '#1e3a5f',
   },
 };
 
@@ -80,17 +86,19 @@ export const Fonts = Platform.select({
  * Prose styles for markdown rendering
  * Inspired by Tailwind's prose classes for beautiful typography
  */
-export const getProseStyles = (isDark: boolean) => {
+export const getProseStyles = (isDark: boolean, isUserMessage: boolean = false) => {
   const colors = isDark ? Colors.dark : Colors.light;
+  const textColor = isUserMessage ? '#ffffff' : colors.text;
+  const secondaryColor = isUserMessage ? 'rgba(255,255,255,0.8)' : colors.textSecondary;
 
   return {
     body: {
-      color: colors.text,
+      color: textColor,
       fontSize: 15,
       lineHeight: 24,
     },
     heading1: {
-      color: colors.text,
+      color: textColor,
       fontSize: 24,
       lineHeight: 32,
       fontWeight: '700' as const,
@@ -98,7 +106,7 @@ export const getProseStyles = (isDark: boolean) => {
       marginBottom: 16,
     },
     heading2: {
-      color: colors.text,
+      color: textColor,
       fontSize: 20,
       lineHeight: 28,
       fontWeight: '700' as const,
@@ -106,7 +114,7 @@ export const getProseStyles = (isDark: boolean) => {
       marginBottom: 12,
     },
     heading3: {
-      color: colors.text,
+      color: textColor,
       fontSize: 18,
       lineHeight: 24,
       fontWeight: '600' as const,
@@ -114,7 +122,7 @@ export const getProseStyles = (isDark: boolean) => {
       marginBottom: 8,
     },
     heading4: {
-      color: colors.text,
+      color: textColor,
       fontSize: 16,
       lineHeight: 22,
       fontWeight: '600' as const,
@@ -124,21 +132,21 @@ export const getProseStyles = (isDark: boolean) => {
     paragraph: {
       marginTop: 0,
       marginBottom: 16,
-      color: colors.text,
+      color: textColor,
       fontSize: 15,
       lineHeight: 24,
     },
     strong: {
       fontWeight: '600' as const,
-      color: colors.text,
+      color: textColor,
     },
     em: {
       fontStyle: 'italic' as const,
-      color: colors.text,
+      color: textColor,
     },
     code_inline: {
-      backgroundColor: isDark ? '#1e293b' : '#f1f5f9',
-      color: isDark ? '#e879f9' : '#db2777',
+      backgroundColor: isUserMessage ? 'rgba(255,255,255,0.2)' : (isDark ? '#1e293b' : '#f1f5f9'),
+      color: isUserMessage ? '#ffffff' : (isDark ? '#e879f9' : '#db2777'),
       paddingHorizontal: 6,
       paddingVertical: 2,
       borderRadius: 4,
@@ -146,33 +154,33 @@ export const getProseStyles = (isDark: boolean) => {
       fontFamily: Fonts?.mono || 'monospace',
     },
     code_block: {
-      backgroundColor: isDark ? '#1e293b' : '#f8fafc',
+      backgroundColor: isUserMessage ? 'rgba(255,255,255,0.1)' : (isDark ? '#1e293b' : '#f8fafc'),
       borderWidth: 1,
-      borderColor: colors.border,
+      borderColor: isUserMessage ? 'rgba(255,255,255,0.2)' : colors.border,
       borderRadius: 8,
       padding: 12,
       marginVertical: 12,
       fontSize: 14,
       lineHeight: 20,
       fontFamily: Fonts?.mono || 'monospace',
-      color: colors.text,
+      color: textColor,
     },
     fence: {
-      backgroundColor: isDark ? '#1e293b' : '#f8fafc',
+      backgroundColor: isUserMessage ? 'rgba(255,255,255,0.1)' : (isDark ? '#1e293b' : '#f8fafc'),
       borderWidth: 1,
-      borderColor: colors.border,
+      borderColor: isUserMessage ? 'rgba(255,255,255,0.2)' : colors.border,
       borderRadius: 8,
       padding: 12,
       marginVertical: 12,
       fontSize: 14,
       lineHeight: 20,
       fontFamily: Fonts?.mono || 'monospace',
-      color: colors.text,
+      color: textColor,
     },
     blockquote: {
-      backgroundColor: isDark ? '#1e293b' : '#f8fafc',
+      backgroundColor: isUserMessage ? 'rgba(255,255,255,0.1)' : (isDark ? '#1e293b' : '#f8fafc'),
       borderLeftWidth: 4,
-      borderLeftColor: colors.accent,
+      borderLeftColor: isUserMessage ? '#ffffff' : colors.accent,
       paddingHorizontal: 16,
       paddingVertical: 12,
       marginVertical: 12,
@@ -224,7 +232,7 @@ export const getProseStyles = (isDark: boolean) => {
       flexWrap: 'nowrap' as const,
     },
     link: {
-      color: colors.accent,
+      color: isUserMessage ? '#ffffff' : colors.accent,
       textDecorationLine: 'underline' as const,
     },
     hr: {
