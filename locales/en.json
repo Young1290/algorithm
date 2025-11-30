@@ -6,7 +6,17 @@
   "chat": {
     "placeholder": "Say something...",
     "user": "user",
-    "assistant": "assistant"
+    "assistant": "assistant",
+    "welcome": {
+      "title": "Welcome to BTC Trading Assistant",
+      "subtitle": "I can help you analyze positions, calculate targets, and manage risk.",
+      "prompts": {
+        "analyzePosition": "Analyze my BTC position",
+        "calculateTargets": "Calculate my target exit prices",
+        "riskManagement": "Help me with risk management",
+        "positionSizing": "Suggest position adjustments"
+      }
+    }
   },
   "explore": {
     "title": "Explore",

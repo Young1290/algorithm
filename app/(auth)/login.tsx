@@ -60,14 +60,14 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAvoidingView
-      className="flex-1 bg-background"
+      className="flex-1 bg-white"
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View className="flex-1 justify-center p-6 max-w-[400px] w-full self-center">
-        <Text className="text-3xl font-bold text-center mb-2 text-foreground">
+        <Text className="text-3xl font-bold text-center mb-2 text-slate-800">
           {isSignUp ? 'Create Account' : 'Welcome Back'}
         </Text>
-        <Text className="text-base text-center mb-8 text-default-500">
+        <Text className="text-base text-center mb-8 text-slate-500">
           {isSignUp
             ? 'Sign up to sync your conversations'
             : 'Sign in to continue'}
@@ -75,7 +75,7 @@ export default function LoginScreen() {
 
         <View className="gap-4">
           <TextInput
-            className="border rounded-xl p-4 text-base text-foreground bg-default-100 border-default-300"
+            className="border rounded-2xl p-4 text-base text-slate-800 bg-slate-50 border-slate-200"
             placeholder="Email"
             placeholderTextColor="#94a3b8"
             value={email}
@@ -87,7 +87,7 @@ export default function LoginScreen() {
           />
 
           <TextInput
-            className="border rounded-xl p-4 text-base text-foreground bg-default-100 border-default-300"
+            className="border rounded-2xl p-4 text-base text-slate-800 bg-slate-50 border-slate-200"
             placeholder="Password"
             placeholderTextColor="#94a3b8"
             value={password}
@@ -98,7 +98,7 @@ export default function LoginScreen() {
           />
 
           <TouchableOpacity
-            className="p-4 rounded-xl items-center justify-center min-h-[52px] bg-primary"
+            className="p-4 rounded-2xl items-center justify-center min-h-[52px] bg-blue-500"
             onPress={handleSubmit}
             disabled={isLoading}
             activeOpacity={0.8}
@@ -113,18 +113,18 @@ export default function LoginScreen() {
           </TouchableOpacity>
 
           <View className="flex-row items-center my-2">
-            <View className="flex-1 h-px bg-default-300" />
-            <Text className="px-4 text-sm text-default-500">or</Text>
-            <View className="flex-1 h-px bg-default-300" />
+            <View className="flex-1 h-px bg-slate-200" />
+            <Text className="px-4 text-sm text-slate-400">or</Text>
+            <View className="flex-1 h-px bg-slate-200" />
           </View>
 
           <TouchableOpacity
-            className="border p-4 rounded-xl items-center justify-center min-h-[52px] bg-default-100 border-default-300"
+            className="border p-4 rounded-2xl items-center justify-center min-h-[52px] bg-slate-50 border-slate-200"
             onPress={handleGoogleSignIn}
             disabled={isLoading}
             activeOpacity={0.8}
           >
-            <Text className="text-base font-semibold text-foreground">
+            <Text className="text-base font-semibold text-slate-800">
               Continue with Google
             </Text>
           </TouchableOpacity>
@@ -135,9 +135,9 @@ export default function LoginScreen() {
           disabled={isLoading}
           className="mt-6"
         >
-          <Text className="text-center text-sm text-default-500">
+          <Text className="text-center text-sm text-slate-500">
             {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
-            <Text className="text-primary font-semibold">
+            <Text className="text-blue-500 font-semibold">
               {isSignUp ? 'Sign In' : 'Sign Up'}
             </Text>
           </Text>

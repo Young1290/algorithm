@@ -6,7 +6,17 @@
   "chat": {
     "placeholder": "说点什么...",
     "user": "用户",
-    "assistant": "助手"
+    "assistant": "助手",
+    "welcome": {
+      "title": "欢迎使用 BTC 交易助手",
+      "subtitle": "我可以帮助你分析仓位、计算目标价格和管理风险。",
+      "prompts": {
+        "analyzePosition": "分析我的 BTC 仓位",
+        "calculateTargets": "计算目标退出价格",
+        "riskManagement": "帮我管理风险",
+        "positionSizing": "建议仓位调整"
+      }
+    }
   },
   "explore": {
     "title": "探索",

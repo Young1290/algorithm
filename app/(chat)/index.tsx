@@ -105,7 +105,36 @@ export default function App() {
 
           {/* Messages */}
           <ScrollView className="flex-1 px-4 py-4">
-            {messages.map((m) => {
+            {messages.length === 0 ? (
+              <View className="flex-1 items-center justify-center py-12">
+                <Text className="text-2xl font-bold text-slate-800 mb-2 text-center">
+                  {t("chat.welcome.title")}
+                </Text>
+                <Text className="text-base text-slate-500 mb-8 text-center px-4">
+                  {t("chat.welcome.subtitle")}
+                </Text>
+                <View className="w-full max-w-[400px] gap-3 px-4">
+                  {[
+                    t("chat.welcome.prompts.analyzePosition"),
+                    t("chat.welcome.prompts.calculateTargets"),
+                    t("chat.welcome.prompts.riskManagement"),
+                    t("chat.welcome.prompts.positionSizing"),
+                  ].map((prompt, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      onPress={() => {
+                        sendMessage({ text: prompt });
+                      }}
+                      className="bg-white border border-slate-200 rounded-2xl px-4 py-3 active:bg-slate-50"
+                      activeOpacity={0.7}
+                    >
+                      <Text className="text-slate-700 text-sm">{prompt}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            ) : (
+              messages.map((m) => {
               const isUser = m.role === "user";
               return (
                 <View
@@ -168,7 +197,8 @@ export default function App() {
                   </View>
                 </View>
               );
-            })}
+            })
+            )}
           </ScrollView>
 
           {/* Input */}

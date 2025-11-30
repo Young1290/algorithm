@@ -90,12 +90,14 @@ export const getProseStyles = (isDark: boolean, isUserMessage: boolean = false) 
   const colors = isDark ? Colors.dark : Colors.light;
   const textColor = isUserMessage ? '#ffffff' : colors.text;
   const secondaryColor = isUserMessage ? 'rgba(255,255,255,0.8)' : colors.textSecondary;
+  const marginBottom = isUserMessage ? 0 : 8;
 
   return {
     body: {
       color: textColor,
       fontSize: 15,
       lineHeight: 24,
+      marginBottom: marginBottom,
     },
     heading1: {
       color: textColor,
