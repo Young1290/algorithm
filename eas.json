@@ -5,17 +5,26 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "DEEPSEEK_API_KEY": ""
+      }
     },
     "preview": {
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "DEEPSEEK_API_KEY": ""
       }
     },
     "production": {
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "DEEPSEEK_API_KEY": ""
       }
     }
   },

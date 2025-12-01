@@ -1,22 +1,22 @@
 import { createDeepSeek } from '@ai-sdk/deepseek';
 import {
-  convertToModelMessages,
-  stepCountIs,
-  streamText,
-  tool,
-  UIMessage,
+    convertToModelMessages,
+    stepCountIs,
+    streamText,
+    tool,
+    UIMessage,
 } from 'ai';
 import { z } from 'zod';
 import {
-  analyzePositionWithSummary,
-  calculateCapitalAdjustmentsWithSummary,
-  calculateTargetPricesWithSummary
+    analyzePositionWithSummary,
+    calculateCapitalAdjustmentsWithSummary,
+    calculateTargetPricesWithSummary
 } from '../lib/bitcoin-trading';
 import {
-  fetchBinance24hStats,
-  fetchBinancePrice,
-  formatStrategyOutput,
-  generateStrategies
+    fetchBinance24hStats,
+    fetchBinancePrice,
+    formatStrategyOutput,
+    generateStrategies
 } from '../lib/strategy-engine';
 
 // Initialize DeepSeek with API key
@@ -24,7 +24,24 @@ const deepseek = createDeepSeek({
   apiKey: process.env.DEEPSEEK_API_KEY || '',
 });
 
+// Log API key status (without exposing the actual key)
+console.log('🔑 DeepSeek API Key configured:', !!process.env.DEEPSEEK_API_KEY);
+console.log('🔑 API Key length:', process.env.DEEPSEEK_API_KEY?.length || 0);
+
 export async function POST(req: Request) {
+  // Check if API key is configured
+  if (!process.env.DEEPSEEK_API_KEY) {
+    console.error('❌ DEEPSEEK_API_KEY is not configured!');
+    return new Response(
+      JSON.stringify({ 
+        error: 'API key not configured. Please set DEEPSEEK_API_KEY environment variable.' 
+      }),
+      { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+  }
   // Use flexible type definition to support both simple format from frontend and complex UIMessage format
   const { messages, language = 'zh' }: {
     messages: Array<{ role: string; content: string } | UIMessage>;
