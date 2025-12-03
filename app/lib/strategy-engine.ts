@@ -19,12 +19,56 @@ export async function fetchBinancePrice(symbol: string): Promise<number | null> 
     const pair = symbol.toUpperCase().endsWith('USDT') 
       ? symbol.toUpperCase() 
       : `${symbol.toUpperCase()}USDT`;
-    const response = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${pair}`);
-    const data = await response.json();
-    if (!data.price) throw new Error('Price not found');
-    return parseFloat(data.price);
+    
+    console.log(`🔍 Fetching Binance price for ${pair}...`);
+    
+    // Try multiple endpoints in order
+    const endpoints = [
+      `https://api.binance.com/api/v3/ticker/price?symbol=${pair}`,
+      `https://api1.binance.com/api/v3/ticker/price?symbol=${pair}`,
+      `https://api2.binance.com/api/v3/ticker/price?symbol=${pair}`,
+      `https://api3.binance.com/api/v3/ticker/price?symbol=${pair}`,
+    ];
+    
+    for (const url of endpoints) {
+      try {
+        console.log(`📡 Trying endpoint: ${url}`);
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          },
+        });
+        
+        console.log(`📡 Binance API response status: ${response.status}`);
+        
+        if (!response.ok) {
+          console.log(`⚠️ Endpoint failed with ${response.status}, trying next...`);
+          continue;
+        }
+        
+        const data = await response.json();
+        console.log(`✅ Binance price data:`, data);
+        
+        if (!data.price) {
+          console.log(`⚠️ No price in response, trying next...`);
+          continue;
+        }
+        
+        const price = parseFloat(data.price);
+        console.log(`💰 Parsed price: $${price}`);
+        
+        return price;
+      } catch (endpointError) {
+        console.log(`⚠️ Endpoint error:`, endpointError);
+        continue;
+      }
+    }
+    
+    throw new Error('All Binance endpoints failed');
   } catch (error) {
-    console.error("Failed to fetch Binance price:", error);
+    console.error("❌ Failed to fetch Binance price:", error);
+    console.error("Error details:", error instanceof Error ? error.message : String(error));
     return null;
   }
 }
@@ -324,6 +368,16 @@ export async function generateStrategies(params: StrategyParams) {
   const dir = position.direction === 'long' ? 1 : -1;
   const currentPnl = (currentPrice - position.avgPrice) * position.qty * dir;
   const pnlDiff = targetProfitUSD - currentPnl;
+  
+  // 🔍 调试信息
+  console.log('📊 盈利计算调试:');
+  console.log('  当前价格:', currentPrice);
+  console.log('  平均价格:', position.avgPrice);
+  console.log('  持仓数量:', position.qty);
+  console.log('  方向:', position.direction);
+  console.log('  当前盈亏:', currentPnl);
+  console.log('  目标盈利:', targetProfitUSD);
+  console.log('  盈亏缺口:', pnlDiff);
 
   // ------------------------------------------------------
   // Strategy 5: 临界点检查 (Priority Check)
@@ -589,13 +643,19 @@ export async function generateStrategies(params: StrategyParams) {
 export function formatStrategyOutput(result: any): string {
   const { currentStatus, strategies, symbol } = result;
   
-  let output = `## 策略引擎分析报告 (ROI 模式)\n\n`;
+  let output = `## 📊 策略引擎分析报告\n\n`;
+  
+  // 🔥 显示当前市场价格（从 Binance API 获取）
+  if (currentStatus && currentStatus.price) {
+    output += `### 💰 市场数据 (Binance API)\n`;
+    output += `> **${symbol || 'BTC'} 当前价格**: **$${parseFloat(currentStatus.price).toLocaleString()}**\n\n`;
+  }
   
   if (currentStatus) {
     const marginNum = parseFloat(currentStatus.leverageInfo.estimatedMargin);
     const notionalNum = parseFloat(currentStatus.leverageInfo.totalNotional);
     
-    output += `### 1. 账户与目标\n`;
+    output += `### 📈 账户与目标\n`;
     output += `> **已投本金 (Margin)**: $${marginNum.toLocaleString()}\n`;
     output += `> **当前浮亏**: $${currentStatus.pnl}\n`;
     if (currentStatus.targetDescription) {
@@ -606,7 +666,7 @@ export function formatStrategyOutput(result: any): string {
     output += `\n`;
   }
   
-  output += `### 2. 建议行动方案 (基于 60% 风控线)\n\n`;
+  output += `### 🎯 建议行动方案 (${strategies.length} 个策略)\n\n`;
   
   strategies.forEach((s: Strategy) => {
     const label = s.evaluation?.label || '';

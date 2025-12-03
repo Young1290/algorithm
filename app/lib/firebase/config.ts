@@ -3,16 +3,16 @@
  * Uses Firebase JS SDK for Expo Go compatibility
  */
 
-import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getApp, getApps, initializeApp, type FirebaseApp } from 'firebase/app';
 import {
-  initializeAuth,
-  getAuth,
-  type Auth,
-  // @ts-expect-error - getReactNativePersistence is available in react-native environment
-  getReactNativePersistence,
+    getAuth,
+    // @ts-expect-error - getReactNativePersistence is available in react-native environment
+    getReactNativePersistence,
+    initializeAuth,
+    type Auth,
 } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
@@ -23,8 +23,21 @@ const firebaseConfig = {
   appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase app (singleton pattern)
-const app: FirebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+// Log Firebase config status (without exposing sensitive data)
+console.log('🔥 Firebase Config Status:');
+console.log('  API Key:', firebaseConfig.apiKey ? '✅ Set' : '❌ Missing');
+console.log('  Project ID:', firebaseConfig.projectId || '❌ Missing');
+console.log('  Auth Domain:', firebaseConfig.authDomain ? '✅ Set' : '❌ Missing');
+
+// Initialize Firebase app (singleton pattern) with error handling
+let app: FirebaseApp;
+try {
+  app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+  console.log('✅ Firebase app initialized successfully');
+} catch (error) {
+  console.error('❌ Firebase initialization failed:', error);
+  throw error;
+}
 
 // Initialize Auth with React Native persistence
 let auth: Auth;

@@ -21,7 +21,10 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.young0825.chattrading",
-      "permissions": ["INTERNET", "ACCESS_NETWORK_STATE"]
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
+      ]
     },
     "web": {
       "output": "server",
@@ -51,9 +54,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "c162b6ad-f13a-49cf-9df8-1818b74c5b99"
+        "projectId": "8ccb802c-237a-4cf0-933d-eb01212541dd"
       }
     },
-    "owner": "young0825"
+    "owner": "aitech777"
   }
 }
